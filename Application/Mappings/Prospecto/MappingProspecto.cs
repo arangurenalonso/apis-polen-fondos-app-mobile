@@ -2,7 +2,9 @@
 {
     using Application.Features.Prospecto.Command.RegistrarMaestroProspecto;
     using Application.Features.Prospecto.Command.RegistrarProspecto;
-    using Application.Features.Prospecto.Command.RegistrarProspectoFacebook;
+    using Application.Features.Prospecto.Command.RegistrarRedesSociales;
+    using Application.Helper;
+    using Application.Models.ConsumoApi.Bitrix24.Entities;
     using AutoMapper;
     using Domain.Entities;
     using Domain.Enum;
@@ -43,15 +45,15 @@
                     .ForMember(dest => dest.VenGercod, origen => origen.MapFrom(src => src.CodGerente))
                     .ForMember(dest => dest.ZonId, origen => origen.MapFrom(src => src.Zona));
 
-            CreateMap<RegistrarProspectoFacebookCommand, MaestroProspecto>()
+            CreateMap<RegistrarProspectoRedesSocialesCommand, MaestroProspecto>()
                     .ForMember(dest => dest.MaeNom, origen => origen.MapFrom(src => src.Nombre))
                     .ForMember(dest => dest.MaePat, origen => origen.MapFrom(src => src.Apellido))
-                    .ForMember(dest => dest.MaeCel1, origen => origen.MapFrom(src => src.Telefono))
+                    .ForMember(dest => dest.MaeCel1, origen => origen.MapFrom(src => MethodHelper.GetLastNCharacters(src.Telefono,10)))
                     .ForMember(dest => dest.MaeEmail, origen => origen.MapFrom(src => src.Email));
 
-            CreateMap<RegistrarProspectoFacebookCommand, Prospectos>()
+            CreateMap<RegistrarProspectoRedesSocialesCommand, Prospectos>()
                     .ForMember(dest => dest.ProCom, origen => origen.MapFrom(src => src.Anuncio))
-                    //.ForMember(dest => dest.ProFecpro, origen => origen.MapFrom(src => src.Fecha))
+                    .ForMember(dest => dest.ProFecpro, origen => origen.MapFrom(src => src.Fecha))
                     .ForMember(dest => dest.MedId, origen => origen.MapFrom(src => src.Plataforma== "fb" ?(int)OrigenVentaEnum.Facebook:(int)OrigenVentaEnum.TikTok));
 
         }

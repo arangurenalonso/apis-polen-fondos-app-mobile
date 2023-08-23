@@ -1,6 +1,8 @@
 ﻿namespace Domain.Entities
 {
     using System.ComponentModel.DataAnnotations.Schema;
+    using System.Text.Json.Serialization;
+
     [Table("prospectos")]
     public class Prospectos
     {
@@ -204,6 +206,9 @@
 
         [Column("genero", TypeName = "varchar")]
         public string? Genero { get; set; }
+        [Column("BitrixID", TypeName = "LONGTEXT")]
+        [JsonPropertyName("BitrixID")]
+        public string? BitrixID { get; set; }
 
 
         public virtual MaestroProspecto? MaestroProspecto { get; set; }

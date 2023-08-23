@@ -2,7 +2,7 @@
 {
     using Application.Features.Prospecto.Command.RegistrarMaestroProspecto;
     using Application.Features.Prospecto.Command.RegistrarProspecto;
-    using Application.Features.Prospecto.Command.RegistrarProspectoFacebook;
+    using Application.Features.Prospecto.Command.RegistrarRedesSociales;
     using Application.Features.Prospecto.Query.ObtenerDatosFoja;
     using Application.Features.Prospecto.Query.ObtenerDatosProspectoPorVendedor;
     using Application.Mappings.Prospecto.DTO;
@@ -53,7 +53,7 @@
 
         [HttpPost("RedesSociales", Name = "RegistrarProspectoRedesSociales")]
         [ProducesResponseType(typeof(int), (int)HttpStatusCode.OK)]
-        public async Task<ActionResult<int>> RegistrarProspectoRedesSociales([FromBody] RegistrarProspectoFacebookCommand command)
+        public async Task<ActionResult<int>> RegistrarProspectoRedesSociales([FromBody] RegistrarProspectoRedesSocialesCommand command)
         {
             var prospecto = await _mediator.Send(command);
             return Ok(prospecto);

@@ -1,8 +1,7 @@
-﻿
-namespace Application.Features.Prospecto.Command.RegistrarProspectoFacebook
+﻿namespace Application.Features.Prospecto.Command.RegistrarRedesSociales
 {
     using MediatR;
-    public sealed record RegistrarProspectoFacebookCommand(
+    public sealed record RegistrarProspectoRedesSocialesCommand(
         DateTime Fecha,
         string? Anuncio,
         string? Plataforma,

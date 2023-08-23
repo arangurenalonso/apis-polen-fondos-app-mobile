@@ -2,6 +2,8 @@
 {
     using System.ComponentModel.DataAnnotations;
     using System.ComponentModel.DataAnnotations.Schema;
+    using System.Text.Json.Serialization;
+
     [Table("maestroprospecto")]
     public  class MaestroProspecto
     {
@@ -71,6 +73,9 @@
         [Column("fnacimiento", TypeName = "datetime")]
         public DateTime? Fnacimiento { get; set; }
 
+        [Column("BitrixID", TypeName = "LONGTEXT")]
+        [JsonPropertyName("BitrixID")]
+        public string? BitrixID { get; set; }
 
         public virtual ICollection<Prospectos>? Prospectos { get; set; }
     }
