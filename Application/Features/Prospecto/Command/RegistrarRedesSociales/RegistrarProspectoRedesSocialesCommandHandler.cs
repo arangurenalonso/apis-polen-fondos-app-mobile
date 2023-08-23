@@ -72,6 +72,7 @@ namespace Application.Features.Prospecto.Command.RegistrarRedesSociales
         {
             maestroProspecto.MaeFeccrea = fechaActual;
             maestroProspecto.MaeFecactu = fechaActual;
+            maestroProspecto.DocId = "DO01";
             maestroProspecto.BitrixID = idContactBitrix24;
             var entityAdded=await _unitOfWork.Repository<MaestroProspecto>().AddAsync(maestroProspecto);
             return entityAdded.MaeId;
@@ -86,6 +87,8 @@ namespace Application.Features.Prospecto.Command.RegistrarRedesSociales
             prospecto.TipoPersona = 1;
             prospecto.Origin = "BULK_LOAD";
             prospecto.IsValidate = 0;
+            prospecto.NlinId = 1;
+            prospecto.Corivta = "OV12";
             var entityAdded = await _unitOfWork.Repository<Prospectos>().AddAsync(prospecto);
             return entityAdded.ProId;
         }
