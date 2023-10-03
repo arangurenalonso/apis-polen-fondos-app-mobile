@@ -1,14 +1,17 @@
-﻿namespace Infrastructure.Repositories
+﻿namespace Infrastructure.Repositories.Persistence
 {
     using Application.Contracts.Repositories;
     using Application.Mappings.Prospecto.DTO;
     using Domain.Entities;
     using Infrastructure.Persistence;
-    using Infrastructure.Repositories.Common;
     using Microsoft.EntityFrameworkCore;
     using MySqlConnector;
     using System.Data;
     using Microsoft.Data.SqlClient;
+    using Infrastructure.Repositories.Persistence.Common;
+    using Application.Contracts.Repositories.Base;
+    using Domain.Enum;
+    using Application.Exception;
 
     public class ProspectoRepository : RepositoryBase<Prospectos>, IProspectoRepository
     {
@@ -109,7 +112,7 @@
                                 VenGercod = result["ven_gercod"] != DBNull.Value ? result["ven_gercod"].ToString() : string.Empty,
                                 GruId = result["gru_id"] != DBNull.Value ? result["gru_id"].ToString() : string.Empty,
                                 CerId = result["cer_id"] != DBNull.Value ? result["cer_id"].ToString() : string.Empty,
-                                
+
                             };
                             if (result["tipo_per"] != DBNull.Value && int.TryParse(result["tipo_per"].ToString(), out var tipoPer))
                             {
@@ -149,6 +152,72 @@
                     _context.Database.CloseConnection();
                 }
             }
+        }
+
+
+        public async Task<Prospectos> ObtenerProspectoPorId(int idProspecto)
+        {
+            var prospecto = await _context.Prospectos
+                                            .Where(x => x.ProId == idProspecto)
+                                            .FirstOrDefaultAsync();
+            if(prospecto == null)
+            {
+                throw new NotFoundException($"Prospecto con Id '{idProspecto}' no fue encontrado");
+            }
+            return prospecto;
+        }
+        public async Task<Prospectos?> ObtenerUltimoProspectoPorIdMaestroProspecto(int idMaestroProspecto)
+        {
+            var prospecto = await _context.Prospectos
+                                           .Where(x => x.MaeId == idMaestroProspecto)
+                                          .OrderByDescending(p => p.ProFecpro)
+                                          .FirstOrDefaultAsync();
+            return prospecto;
+        }
+        public async Task<bool> VerificarIngresoProspecto(int idMaestroProspecto) 
+        {
+            var prospecto = await _context.Prospectos
+                                            .Where(x=>x.MaeId== idMaestroProspecto)
+                                           .OrderByDescending(p => p.ProFecpro)
+                                           .FirstOrDefaultAsync();
+            if (prospecto==null)
+            {
+                return true;
+            }
+            DateTime fechaProspecto = prospecto.ProFecpro;
+            DateTime fechaActual = DateTime.Now;
+            int diasDiferencia = (fechaActual - fechaProspecto).Days;
+            return diasDiferencia >= 30;
+        }
+        public async Task<int> EstablecerDatosMinimosYRegistrarProspecto(Prospectos prospecto, 
+            int idMaestroProspecto, string idDealBitrix24, Vendedores vendedor, int zonaId,string idOrigen)
+        {
+            var fechaActual=DateTime.Now; 
+            prospecto.BitrixID = idDealBitrix24;
+            prospecto.MaeId = idMaestroProspecto;
+            prospecto.EstId = (int)EstadoEnum.NoContactado;
+            prospecto.ProFecpro = fechaActual;
+            prospecto.ProFecest = fechaActual;
+            prospecto.ProFecasi = fechaActual;
+            prospecto.FecCap = fechaActual;
+            prospecto.TipoPersona = 1;
+            prospecto.Origin = "BULK_LOAD";
+            prospecto.IsValidate = 0;
+            prospecto.NlinId = 1;
+            prospecto.Corivta = idOrigen;
+            prospecto.ZonId = zonaId;
+            prospecto.VenCod = vendedor.VenCod;
+            prospecto.VenSupcod = vendedor.VenSupCod;
+            prospecto.VenGescod = vendedor.VenGesCod;
+            prospecto.VenGercod = vendedor.VenGerCod;
+
+            if (idOrigen== "OV02")
+            {
+                prospecto.IntId = true;
+            }
+
+            var entityAdded = await AddAsync(prospecto);
+            return entityAdded.ProId;
         }
 
     }

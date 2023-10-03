@@ -1,4 +1,4 @@
-﻿namespace Infrastructure.Repositories.Common
+﻿namespace Infrastructure.Repositories.Persistence.Common
 {
     using Application.Contracts.Repositories.Base;
     using Infrastructure.Persistence;

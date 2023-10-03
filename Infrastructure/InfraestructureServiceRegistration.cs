@@ -6,10 +6,10 @@
     using Application.Contracts.Repositories.Base;
     using Infrastructure.Options.ApiExternas;
     using Infrastructure.Persistence;
-    using Infrastructure.Repositories;
     using Infrastructure.Repositories.ApisExternas;
     using Infrastructure.Repositories.ApisExternas.Abstractions;
-    using Infrastructure.Repositories.Common;
+    using Infrastructure.Repositories.Persistence;
+    using Infrastructure.Repositories.Persistence.Common;
     using Microsoft.EntityFrameworkCore;
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
@@ -29,6 +29,9 @@
             services.AddScoped(typeof(IRepositoryBase<>), typeof(RepositoryBase<>));
 
             services.AddScoped<IProspectoRepository, ProspectoRepository>();
+            services.AddScoped<IVendedorRepository, VendedorRepository>();
+            services.AddScoped<IMaestroProspectoRepository, MaestroProspectoRepository>();
+            services.AddScoped<IReportesRepository, ReportesRepository>();
 
             services.AddScoped<IClienteProvider, ClienteProvider>();
             services.AddScoped<IBitrix24ApiService, Bitrix24ApiService>();

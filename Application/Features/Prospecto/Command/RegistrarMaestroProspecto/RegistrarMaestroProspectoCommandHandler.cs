@@ -12,12 +12,14 @@
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
-        private readonly IProspectoRepository _prospectoRepository;
-        public RegistrarMaestroProspectoCommandHandler(IUnitOfWork unitOfWork, IMapper mapper, IProspectoRepository prospectoRepository)
+        private readonly IMaestroProspectoRepository _maestroProspectoRepository;
+        public RegistrarMaestroProspectoCommandHandler(IUnitOfWork unitOfWork, IMapper mapper,
+            IMaestroProspectoRepository maestroProspectoRepository)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
-            _prospectoRepository = prospectoRepository;
+            _maestroProspectoRepository = maestroProspectoRepository;
+
         }
 
 

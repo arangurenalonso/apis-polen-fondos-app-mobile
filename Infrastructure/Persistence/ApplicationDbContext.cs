@@ -1,5 +1,6 @@
 ﻿namespace Infrastructure.Persistence
 {
+    using Application.Models.StoreProcedure.Response;
     using Domain.Entities;
     using Microsoft.EntityFrameworkCore;
     using System.Reflection;
@@ -22,9 +23,14 @@
         public DbSet<Estados> Estados { get; set; }
         public DbSet<Zonas> Zonas { get; set; }
         public DbSet<LogFondos> LogFondos { get; set; }
-        
+        public DbSet<Vendedores> Vendedores { get; set; }
+
+        public DbSet<RequestResponseLog> RequestResponseLog { get; set; }
+
         public DbSet<ComisionesParaLiquidacion> ComisionesParaLiquidacion { get; set; }
-        
+        public DbSet<DiscardReasonsEntity> DiscardReasonsEntity { get; set; }
+        public DbSet<StatesContactosEntity> StatesContactosEntity { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

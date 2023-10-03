@@ -6,15 +6,79 @@
     using Newtonsoft.Json;
     using System.Net.Http.Headers;
     using System.Text;
+    using System.Net;
+    using System.Net.Http;
 
     public class ClienteProvider : IClienteProvider
     {
-        public async Task<ResponseModel<T>> GetAsync<T>(string urlBase, string path,
-            string? tokenType = null, string? accessToken = null)
+        public async Task<ResponseModel<T>> ExecuteApiCall<T>(Func<Task<ResponseModel<T>>> apiOperation)
         {
             try
             {
+                return await apiOperation();
+            }
+            catch (TaskCanceledException taskCanceledException)
+            {
+                return GenerateExceptionResponse<T>($"TaskCanceledException: {taskCanceledException.Message}");
+            }
+            catch (JsonReaderException jsonReaderException)
+            {
+                return GenerateExceptionResponse<T>($"JsonReaderException: {jsonReaderException.Message}");
+            }
+            catch (ArgumentNullException argumentNullException)
+            {
+                return GenerateExceptionResponse<T>($"ArgumentNullException: {argumentNullException.Message}");
+            }
+            catch (ArgumentException argumentException)
+            {
+                return GenerateExceptionResponse<T>($"ArgumentException: {argumentException.Message}");
+            }
+            catch (WebException webException)
+            {
+                return GenerateExceptionResponse<T>($"WebException: {webException.Message}");
+            }
+            catch (InvalidOperationException invalidOperationException)
+            {
+                return GenerateExceptionResponse<T>($"InvalidOperationException: {invalidOperationException.Message}");
+            }
+            catch (TimeoutException timeoutException)
+            {
+                return GenerateExceptionResponse<T>($"TimeoutException: {timeoutException.Message}");
+            }
+            catch (IOException ioException)
+            {
+                return GenerateExceptionResponse<T>($"IOException: {ioException.Message}");
+            }
+            catch (UnauthorizedAccessException unauthorizedAccessException)
+            {
+                return GenerateExceptionResponse<T>($"UnauthorizedAccessException: {unauthorizedAccessException.Message}");
+            }
+            catch (HttpRequestException httpRequestException)
+            {
+
+                string detailedMessage = $"HttpRequestException: {httpRequestException.Message}";
+
+                if (httpRequestException.InnerException != null)
+                {
+                    detailedMessage += $" <---> Inner Exception: {httpRequestException.InnerException.Message}";
+                }
+
+                return GenerateExceptionResponse<T>(detailedMessage);
+            }
+            catch (Exception ex)
+            {
+                return GenerateExceptionResponse<T>($"Unhandled Exception: {ex.Message}");
+            }
+        }
+
+        public Task<ResponseModel<T>> GetAsync<T>(string urlBase, string path,
+            string? tokenType = null, string? accessToken = null)
+        {
+            return ExecuteApiCall(async () =>
+            {
                 var client = new HttpClient();
+                client.Timeout = TimeSpan.FromSeconds(300);
+
                 //Agregamos el encabezado
                 //*********************************************************************************************
                 if (!string.IsNullOrEmpty(tokenType) && !string.IsNullOrEmpty(accessToken))
@@ -38,19 +102,16 @@
                     ? GenerateErrorResponse<T>(answer, ResponseModel)
                         : GenerateSuccessResponse<T>(answer);
                 }
-            }
-            catch (Exception ex)
-            {
-                return GenerateExceptionResponse<T>(ex.Message);
-            }
+            });
         }
-        public async Task<ResponseModel<T>> GetAsyncWithQueryParams<T>(string urlBase, string path, Dictionary<string, string> queryParams,
+        public Task<ResponseModel<T>> GetAsyncWithQueryParams<T>(string urlBase, string path, Dictionary<string, string> queryParams,
             string? tokenType = null, string? accessToken = null)
         {
-            try
+            return ExecuteApiCall(async () =>
             {
                 string queryParamsCollection = string.Join("&", queryParams.Select(x => $"{x.Key}={x.Value}"));
                 var client = new HttpClient();
+                client.Timeout = TimeSpan.FromSeconds(300);
                 //Agregamos el encabezado
                 //*********************************************************************************************
                 if (!string.IsNullOrEmpty(tokenType) && !string.IsNullOrEmpty(accessToken))
@@ -67,18 +128,15 @@
                 return !ResponseModel.IsSuccessStatusCode
                     ? GenerateErrorResponse<T>(answer, ResponseModel, $"QueryParams: {queryParamsCollection}")
                     : GenerateSuccessResponse<T>(answer);
-            }
-            catch (Exception ex)
-            {
-                return GenerateExceptionResponse<T>(ex.Message);
-            }
+            });
         }
-        public async Task<ResponseModel<T>> PostAsyncFormData<T>(string urlBase, string path, Dictionary<string, string> formData,
+        public  Task<ResponseModel<T>> PostAsyncFormData<T>(string urlBase, string path, Dictionary<string, string> formData,
             string? tokenType = null, string? accessToken = null)
         {
-            try
+            return ExecuteApiCall(async () =>
             {
                 var client = new HttpClient();
+                client.Timeout = TimeSpan.FromSeconds(300);
                 //Agregamos el encabezado
                 //*********************************************************************************************
                 if (!string.IsNullOrEmpty(tokenType) && !string.IsNullOrEmpty(accessToken))
@@ -99,19 +157,16 @@
                 return !ResponseModel.IsSuccessStatusCode
                     ? GenerateErrorResponse<T>(answer, ResponseModel, $"FormData: {formDataString}")
                     : GenerateSuccessResponse<T>(answer);
-            }
-            catch (Exception ex)
-            {
-                return GenerateExceptionResponse<T>(ex.Message);
-            }
+            });
         }
 
-        public async Task<ResponseModel<T>> PostAsyncFormData<T>(string urlBase, string path, Dictionary<string, string> formData,
+        public  Task<ResponseModel<T>> PostAsyncFormData<T>(string urlBase, string path, Dictionary<string, string> formData,
         IFormFile file, string? tokenType = null, string? accessToken = null)
         {
-            try
+            return ExecuteApiCall(async () =>
             {
                 using var client = new HttpClient();
+                client.Timeout = TimeSpan.FromSeconds(300);
 
                 if (!string.IsNullOrEmpty(tokenType) && !string.IsNullOrEmpty(accessToken))
                 {
@@ -144,20 +199,17 @@
                             : $"FormData: file={file.FileName}"
                         )
                     : GenerateSuccessResponse<T>(answer);
-            }
-            catch (Exception ex)
-            {
-                return GenerateExceptionResponse<T>(ex.Message);
-            }
+            });
         }
-        public async Task<ResponseModel<T>> PostAsyncJson<T>(string urlBase, string path, Object model,
+        public Task<ResponseModel<T>> PostAsyncJson<T>(string urlBase, string path, Object model,
             string? tokenType = null, string? accessToken = null)
         {
-            try
+            return ExecuteApiCall(async () =>
             {
                 var request = JsonConvert.SerializeObject(model);
                 var content = new StringContent(request, Encoding.UTF8, "application/json");
                 var client = new HttpClient();
+                client.Timeout = TimeSpan.FromSeconds(300);
                 //Agregamos el encabezado
                 //*********************************************************************************************
                 if (!string.IsNullOrEmpty(tokenType) && !string.IsNullOrEmpty(accessToken))
@@ -174,18 +226,15 @@
                 return !ResponseModel.IsSuccessStatusCode
                     ? GenerateErrorResponse<T>(answer, ResponseModel, request)
                     : GenerateSuccessResponse<T>(answer);
-            }
-            catch (Exception ex)
-            {
-                return GenerateExceptionResponse<T>(ex.Message);
-            }
+            });
         }
-        public async Task<ResponseModel<T>> UploadFileAsync<T>(string urlBase, string path, string filePath,
+        public Task<ResponseModel<T>> UploadFileAsync<T>(string urlBase, string path, string filePath,
             string? tokenType = null, string? accessToken = null)
         {
-            try
+            return ExecuteApiCall(async () =>
             {
                 var client = new HttpClient();
+                client.Timeout = TimeSpan.FromSeconds(300);
 
                 //Agregamos el encabezado
                 //*********************************************************************************************
@@ -216,21 +265,18 @@
                             : GenerateSuccessResponse<T>(answer);
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                return GenerateExceptionResponse<T>(ex.Message);
-            }
+            });
 
         }
-        public async Task<ResponseModel<T>> PutAsync<T>(string urlBase, string path, Object model, int id,
+        public Task<ResponseModel<T>> PutAsync<T>(string urlBase, string path, Object model, int id,
             string? tokenType = null, string? accessToken = null)
         {
-            try
+            return ExecuteApiCall(async () =>
             {
                 var request = JsonConvert.SerializeObject(model);
                 var content = new StringContent(request, Encoding.UTF8, "application/json");
                 var client = new HttpClient();
+                client.Timeout = TimeSpan.FromSeconds(300);
                 client.BaseAddress = new Uri(urlBase);
                 //Agregamos el encabezado
                 //*********************************************************************************************
@@ -246,18 +292,15 @@
                 return !ResponseModel.IsSuccessStatusCode
                     ? GenerateErrorResponse<T>(answer, ResponseModel, request)
                     : GenerateSuccessResponse<T>(answer);
-            }
-            catch (Exception ex)
-            {
-                return GenerateExceptionResponse<T>(ex.Message);
-            }
+            });
         }
-        public async Task<ResponseModel<T>> DeleteAsync<T>(string urlBase, string path,
+        public Task<ResponseModel<T>> DeleteAsync<T>(string urlBase, string path,
             string? tokenType = null, string? accessToken = null)
         {
-            try
+            return ExecuteApiCall(async () =>
             {
                 var client = new HttpClient();
+                client.Timeout = TimeSpan.FromSeconds(300);
                 //Agregamos el encabezado
                 //*********************************************************************************************
                 if (!string.IsNullOrEmpty(tokenType) && !string.IsNullOrEmpty(accessToken))
@@ -274,11 +317,7 @@
                 return !ResponseModel.IsSuccessStatusCode
                     ? GenerateErrorResponse<T>(answer, ResponseModel)
                     : GenerateSuccessResponse<T>(answer);
-            }
-            catch (Exception ex)
-            {
-                return GenerateExceptionResponse<T>(ex.Message);
-            }
+            });
         }
         private static string GetMimeType(string filePath)
         {
@@ -376,7 +415,8 @@
             return new ResponseModel<T>
             {
                 IsSuccess = false,
-                Message = serializedError
+                Message = serializedError,
+                Errores = errorDetails
             };
         }
         private ResponseModel<T> GenerateSuccessResponse<T>(object data)

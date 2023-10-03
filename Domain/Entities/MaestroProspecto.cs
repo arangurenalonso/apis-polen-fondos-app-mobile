@@ -23,7 +23,7 @@
         public string? MaeMat { get; set; }
 
         [Column("mae_nom", TypeName = "varchar")]
-        public string MaeNom { get; set; }
+        public string? MaeNom { get; set; }
 
         [Column("mae_raz", TypeName = "varchar")]
         public string? MaeRaz { get; set; }
@@ -44,7 +44,7 @@
         public string? DisId { get; set; }
 
         [Column("mae_cel1", TypeName = "varchar")]
-        public string MaeCel1 { get; set; }
+        public string? MaeCel1 { get; set; }
 
         [Column("mae_cel2", TypeName = "varchar")]
         public string? MaeCel2 { get; set; }

@@ -1,4 +1,4 @@
-﻿namespace Infrastructure.Repositories.Common
+﻿namespace Infrastructure.Repositories.Persistence.Common
 {
     using Application.Contracts.Repositories.Base;
     using Infrastructure.Persistence;
@@ -13,7 +13,7 @@
             _context = context;
         }
 
-        public async Task<IReadOnlyList<T>> GetAllAsync()
+        public async Task<List<T>> GetAllAsync()
         {
             return await _context.Set<T>().ToListAsync();
         }
@@ -21,19 +21,19 @@
         {
             return await _context.Set<T>().AnyAsync(predicado, cancellationToken);
         }
-        public async Task<IReadOnlyList<T>> GetAsync(Expression<Func<T, bool>> predicado, CancellationToken cancellationToken)
+        public async Task<List<T>> GetAsync(Expression<Func<T, bool>> predicado, CancellationToken cancellationToken)
         {
 
             return await _context.Set<T>().Where(predicado).ToListAsync(cancellationToken);
         }
-        public async Task<IReadOnlyList<T>> GetAsync(Expression<Func<T, bool>> predicado)
+        public async Task<List<T>> GetAsync(Expression<Func<T, bool>> predicado)
         {
             return await _context.Set<T>().Where(predicado).ToListAsync();
         }
         /*
          Permite hacer la consulta a solo 2 entidades
          */
-        public async Task<IReadOnlyList<T>> GetAsync(Expression<Func<T, bool>>? predicado = null,
+        public async Task<List<T>> GetAsync(Expression<Func<T, bool>>? predicado = null,
                                                     Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null,
                                                     string? includeString = null,
                                                     bool disableTracking = true)
@@ -46,8 +46,8 @@
             return await query.ToListAsync();
         }
 
-        public async Task<IReadOnlyList<T>> GetAsync(Expression<Func<T, bool>>? predicado = null,
-                                                       Func<IQueryable<T> , IOrderedQueryable<T>>? orderBy = null,
+        public async Task<List<T>> GetAsync(Expression<Func<T, bool>>? predicado = null,
+                                                       Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null,
                                                        List<Expression<Func<T, object>>>? includes = null,
                                                        bool disableTracking = true)
         {
@@ -59,7 +59,7 @@
             return await query.ToListAsync();
         }
 
-        public async Task<IReadOnlyList<T>> GetAsync(Expression<Func<T, bool>>? predicado = null,
+        public async Task<List<T>> GetAsync(Expression<Func<T, bool>>? predicado = null,
                                                 List<Expression<Func<T, object>>>? includes = null,
                                                 bool disableTracking = true)
         {

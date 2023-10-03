@@ -51,11 +51,38 @@
                     .ForMember(dest => dest.MaeCel1, origen => origen.MapFrom(src => MethodHelper.GetLastNCharacters(src.Telefono,10)))
                     .ForMember(dest => dest.MaeEmail, origen => origen.MapFrom(src => src.Email));
 
-            CreateMap<RegistrarProspectoRedesSocialesCommand, Prospectos>()
-                    .ForMember(dest => dest.ProCom, origen => origen.MapFrom(src => src.Anuncio))
-                    .ForMember(dest => dest.ProFecpro, origen => origen.MapFrom(src => src.Fecha))
-                    .ForMember(dest => dest.MedId, origen => origen.MapFrom(src => src.Plataforma== "fb" ?(int)OrigenVentaEnum.Facebook:(int)OrigenVentaEnum.TikTok));
+            CreateMap<ContactBitrix24, MaestroProspecto>()
+                    .ForMember(dest => dest.MaeNom, origen => origen.MapFrom(src => $"{src.NAME} {src.SECOND_NAME}"))
+                    .ForMember(dest => dest.MaePat, origen => origen.MapFrom(src => src.LAST_NAME))
+                    .ForMember(dest => dest.MaeCel1, origen => origen.MapFrom(src => GetPhoneNumber(src)))
+                    .ForMember(dest => dest.MaeEmail, origen => origen.MapFrom(src => GetEmail(src)));
 
+            CreateMap<DealBitrix24, Prospectos>()
+                    .ForMember(dest => dest.ProCom, origen => origen.MapFrom(src => src.TITLE))
+                   .ForMember(dest => dest.MedId, origen => origen.MapFrom(src => (int)OrigenVentaEnum.Web));
+            CreateMap<RegistrarProspectoRedesSocialesCommand, Prospectos>()
+                   .ForMember(dest => dest.ProCom, origen => origen.MapFrom(src => src.Anuncio))
+                   .ForMember(dest => dest.MedId, origen => origen.MapFrom(src => src.Plataforma.Trim().ToUpper() == "META" ? (int)OrigenVentaEnum.Facebook : (int)OrigenVentaEnum.TikTok));
+
+        }
+        private string GetPhoneNumber(ContactBitrix24 src)
+        {
+            if (src.PHONE != null && src.PHONE.Count > 0 && src.PHONE[0] != null)
+            {
+                string[] subcadenas = src.PHONE[0].VALUE.Split(' ');
+                string nuevaCadena = string.Join("", subcadenas);
+
+                return MethodHelper.GetLastNCharacters(nuevaCadena, 10);
+            }
+            return "";
+        }
+        private string GetEmail(ContactBitrix24 src)
+        {
+            if (src.EMAIL != null && src.EMAIL.Count > 0 && src.EMAIL[0] != null)
+            {
+                return src.EMAIL[0].VALUE;
+            }
+            return "";
         }
     }
 }

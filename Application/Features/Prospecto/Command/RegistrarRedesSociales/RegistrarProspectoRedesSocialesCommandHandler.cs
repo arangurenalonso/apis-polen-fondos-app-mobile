@@ -1,135 +1,134 @@
-﻿
-using Application.Contracts.Repositories.Base;
-using Application.Contracts.Repositories;
-using Application.Features.Prospecto.Command.RegistrarProspecto;
-using AutoMapper;
-using Domain.Entities;
-using Domain.Enum;
-using MediatR;
-using System.Text.Json;
-using System.Globalization;
-using Application.Models.ConsumoApi.Bitrix24.Models;
-using Application.Contracts.ApiExterna;
-using Application.Models.ConsumoApi.Bitrix24.Entities;
-
-namespace Application.Features.Prospecto.Command.RegistrarRedesSociales
+﻿namespace Application.Features.Prospecto.Command.RegistrarRedesSociales
 {
+    using Application.Contracts.Repositories.Base;
+    using AutoMapper;
+    using Domain.Entities;
+    using MediatR;
+    using Application.Contracts.ApiExterna;
+    using Domain.Enum.Dictionario;
+    using Application.Contracts.Repositories;
+    using System.Text.Json;
     public class RegistrarProspectoRedesSocialesCommandHandler : IRequestHandler<RegistrarProspectoRedesSocialesCommand, int>
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly IBitrix24ApiService _bitrix24ApiService;
-        private DateTime fechaActual=DateTime.Now;
+        private readonly IVendedorRepository _vendedorRepository;
+        private readonly IMaestroProspectoRepository _maestroProspectoRepository;
+        private readonly IProspectoRepository _prospectoRepository;
         public RegistrarProspectoRedesSocialesCommandHandler(IUnitOfWork unitOfWork, 
             IMapper mapper, 
-            IBitrix24ApiService bitrix24ApiService)
+            IBitrix24ApiService bitrix24ApiService,
+            IVendedorRepository vendedorRepository,
+            IMaestroProspectoRepository maestroProspectoRepository,
+            IProspectoRepository prospectoRepository )
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _bitrix24ApiService = bitrix24ApiService;
+            _vendedorRepository = vendedorRepository;
+            _maestroProspectoRepository = maestroProspectoRepository;
+            _prospectoRepository = prospectoRepository;
         }
 
 
         public async Task<int> Handle(RegistrarProspectoRedesSocialesCommand request, CancellationToken cancellationToken)
         {
-
-            var idContactBitrix24 = await RegistrarContactoBitrix24(MapearContactBitrix(request));
-            var idMaestroProspecto = await RegistrarMaestroProspecto(_mapper.Map<MaestroProspecto>(request), idContactBitrix24);
-            var idProspecto = await RegistrarProspecto(_mapper.Map<Prospectos>(request), idMaestroProspecto);
-
-            return idProspecto;
-
-        }
-        private ContactBitrix24 MapearContactBitrix(RegistrarProspectoRedesSocialesCommand request)
-        {
-            var obj = new ContactBitrix24
+            try
             {
-                NAME=request.Nombre,
-                LAST_NAME=request.Apellido
-            };
-            if (request.Telefono != null)
-            {
-                var phone = new TypedField
+
+                var enumCampignOrigin = getOriginCapaña(request.Plataforma!, request.Anuncio!).ToString();
+                var zonaId = getIdZonaByAnuncio(request.Anuncio);
+
+                var existeMaestroProspecto = await _maestroProspectoRepository.VerificarRegistroPrevioMaestroProspecto(request.Telefono);
+                var vendedorAsignado = await _vendedorRepository.ObtenerVendedorAsignado(zonaId);
+                string idContactBitrix24 = "";
+                int idMaestroProspecto = 0;
+                bool seDebeIngresarProspecto = false;
+                if (existeMaestroProspecto == null)
                 {
-                    VALUE = request.Telefono,
-                    VALUE_TYPE = "PHONE"
-                };
-                obj.PHONE.Add(phone);
-            }
-            if (request.Email != null)
-            {
-                var email = new TypedField
-                {
-                    VALUE = request.Email,
-                    VALUE_TYPE = "EMAIL"
-                };
-                obj.EMAIL.Add(email);
-            }
 
-            return obj;
-        }
-        private async Task<int> RegistrarMaestroProspecto(MaestroProspecto maestroProspecto, string idContactBitrix24)
-        {
-            maestroProspecto.MaeFeccrea = fechaActual;
-            maestroProspecto.MaeFecactu = fechaActual;
-            maestroProspecto.DocId = "DO01";
-            maestroProspecto.BitrixID = idContactBitrix24;
-            var entityAdded=await _unitOfWork.Repository<MaestroProspecto>().AddAsync(maestroProspecto);
-            return entityAdded.MaeId;
-        }
-        private async Task<int> RegistrarProspecto(Prospectos prospecto, int idMaestroProspecto)
-        {
-            prospecto.MaeId = idMaestroProspecto;
-            prospecto.EstId = (int)EstadoEnum.NoContactado;
-            prospecto.ProFecest = fechaActual;
-            prospecto.ProFecasi = fechaActual;
-            prospecto.FecCap = fechaActual;
-            prospecto.TipoPersona = 1;
-            prospecto.Origin = "BULK_LOAD";
-            prospecto.IsValidate = 0;
-            prospecto.NlinId = 1;
-            prospecto.Corivta = "OV12";
-            var entityAdded = await _unitOfWork.Repository<Prospectos>().AddAsync(prospecto);
-            return entityAdded.ProId;
-        }
-        private async Task<string> RegistrarContactoBitrix24(ContactBitrix24 contactBitrix24)
-        {
-            var request = new ApiRequestBitrixCreate<ContactBitrix24>()
-            {
-                fields = contactBitrix24,
-                Params = new ParamsApiRequestCreate()
+                    idContactBitrix24 = await _bitrix24ApiService.RegistrarContactoBitrix24(
+                        request.Nombre,
+                        request.Apellido,
+                        request.Telefono,
+                        request.Email,
+                        enumCampignOrigin,
+                        vendedorAsignado.BitrixID
+                        );
+                    idMaestroProspecto = await _maestroProspectoRepository.EstablerDatosMinimoYRegistrarMaestroProspecto(_mapper.Map<MaestroProspecto>(request), idContactBitrix24);
+                    seDebeIngresarProspecto = true;
+                }
+                else
                 {
-                    REGISTER_SONET_EVENT = "Y"
+                    idContactBitrix24 = existeMaestroProspecto.BitrixID;
+                    idMaestroProspecto = existeMaestroProspecto.MaeId;
+                    seDebeIngresarProspecto = await _prospectoRepository.VerificarIngresoProspecto(existeMaestroProspecto.MaeId);
+                }
+                var idProspecto = 0;
+
+                if (seDebeIngresarProspecto)
+                {
+                    var idDealBitrix24 = await _bitrix24ApiService.RegistrarDealBitrix24(
+                                                            request.Anuncio,
+                                                            idContactBitrix24,
+                                                            enumCampignOrigin,
+                                                            vendedorAsignado.BitrixID
+                                                        );
+                    idProspecto = await _prospectoRepository.EstablecerDatosMinimosYRegistrarProspecto(_mapper.Map<Prospectos>(request), idMaestroProspecto, idDealBitrix24, vendedorAsignado, zonaId, "OV12");
+                }
+                else
+                {
+                    var prospecto = await _prospectoRepository.ObtenerUltimoProspectoPorIdMaestroProspecto(existeMaestroProspecto.MaeId);
+                    if (prospecto != null)
+                    {
+                        await _bitrix24ApiService.ValidarExistenciaDealEnBitrix(prospecto.ProId);
+                    }
+                    throw new ApplicationException($"Lead Repetido");
                 }
 
-            };
+                return idProspecto;
 
-            var resultadoPost = await _bitrix24ApiService.CRMContactAdd(request);
-            if (!resultadoPost.IsSuccess)
-            {
-                throw new ApplicationException(resultadoPost.Message);
             }
-            return resultadoPost.Result.Result.ToString();
-        }
-        private async Task<string> RegistrarDealBitrix24(DealBitrix24 dealBitrix24)
-        {
-            var request = new ApiRequestBitrixCreate<DealBitrix24>()
+            catch (System.Exception e)
             {
-                fields = dealBitrix24,
-                Params = new ParamsApiRequestCreate()
+                var mensaje =$"Error ocurrido en RegistrarProspectoRedesSociales --- {e.Message}";
+                var log = new LogFondos()
                 {
-                    REGISTER_SONET_EVENT = "Y"
-                }
-
-            };
-
-            var resultadoPost = await _bitrix24ApiService.CRMDealAdd(request);
-            if (!resultadoPost.IsSuccess)
-            {
-                throw new ApplicationException(resultadoPost.Message);
+                    Fecha = DateTime.Now,
+                    Mensaje = mensaje,
+                    Tipo = "Polen",
+                    Valor = JsonSerializer.Serialize(request)
+                };
+                await _unitOfWork.Repository<LogFondos>().AddAsync(log);
+                await Task.Delay(TimeSpan.FromSeconds(120));
+                return 0;
             }
-            return resultadoPost.Result.Result.ToString();
+
         }
+       
+
+        private int getOriginCapaña(string plataforma,string anuncio)
+        {
+            char delimiter = '_';
+            string[] anuncioSplit = anuncio.Split(delimiter);
+            var ciudad = anuncioSplit[0].Trim().ToUpper();
+            var producto = anuncioSplit[1].Trim().ToUpper();
+
+            var campaignString = $"{ciudad}_{producto}_{plataforma}";
+            return (int)EnumDictionaryProvider.CampaignOriginEnumDict.FirstOrDefault(pair => pair.Value == campaignString).Key;
+
+        }
+        private int getIdZonaByAnuncio(string anuncio)
+        {
+            char delimiter = '_';
+            string[] anuncioSplit = anuncio.Split(delimiter);
+            var ciudad = anuncioSplit[0].Trim().ToUpper();
+            return  (int)EnumDictionaryProvider.ZonaEnumDict.FirstOrDefault(pair => pair.Value == ciudad).Key;
+
+        }
+        
+
 
     }
 

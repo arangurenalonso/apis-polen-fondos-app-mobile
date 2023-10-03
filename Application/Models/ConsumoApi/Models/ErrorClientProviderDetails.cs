@@ -1,7 +1,7 @@
 ﻿namespace Application.Models.ConsumoApi.Models
 {
     public class ErrorClientProviderDetails
-    {
+    { 
         public bool IsSuccess { get; set; }
         public string Message { get; set; }
         public string? RequestUrl { get; set; }

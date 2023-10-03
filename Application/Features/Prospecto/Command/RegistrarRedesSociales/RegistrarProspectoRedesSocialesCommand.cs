@@ -2,12 +2,11 @@
 {
     using MediatR;
     public sealed record RegistrarProspectoRedesSocialesCommand(
-        DateTime Fecha,
-        string? Anuncio,
-        string? Plataforma,
-        string? Nombre,
+        string Anuncio,
+        string Plataforma,
+        string Nombre,
         string? Apellido,
-        string? Telefono,
+        string Telefono,
         string? Email
         ) : IRequest<int>;
 }
