@@ -10,7 +10,7 @@
         Task<SpGetListaDatosFojaResult> ObtenerDatosFoja(int proid); 
         Task<int> EstablecerDatosMinimosYRegistrarProspecto(Prospectos prospecto,
             int idMaestroProspecto, string idDealBitrix24, Vendedores vendedor, int zonaId, string idOrigen);
-        Task<bool> VerificarIngresoProspecto(int idMaestroProspecto);
+        Task<(bool, Prospectos? prospecto)> VerificarIngresoProspecto(int idMaestroProspecto);
         Task<Prospectos?> ObtenerUltimoProspectoPorIdMaestroProspecto(int idMaestroProspecto);
     }
 }

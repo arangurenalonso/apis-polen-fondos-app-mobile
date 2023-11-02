@@ -13,6 +13,8 @@
     {
         public MappingProspecto()
         {
+            CreateMap<Prospectos, Prospectos>()
+                    .ForMember(dest => dest.ProId, opt => opt.Ignore()); 
             CreateMap<RegistrarMaestroProspectoCommand, MaestroProspecto>()
                     .ForMember(dest => dest.DocId, origen => origen.MapFrom(src => src.TipoDoc != null ? (EnumDictionaryProvider.TipoDocumentoDict[src.TipoDoc.Value]) : null))
                     .ForMember(dest => dest.MaeNumdoc, origen => origen.MapFrom(src => src.NumDoc))

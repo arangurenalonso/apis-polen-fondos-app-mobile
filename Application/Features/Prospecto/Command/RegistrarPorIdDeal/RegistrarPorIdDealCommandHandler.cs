@@ -40,6 +40,7 @@ namespace Application.Features.Prospecto.Command.RegistrarPorIdDeal
         {
             try
             {
+                
                 var zonaId = 0;//Si ZonaId = 0 => Enviar a todos
                 var deal = await _bitrix24ApiService.CRMDealGet(request.Id.ToString());
                 var origenVenta = (await _unitOfWork.Repository<OrigenVentas>().GetAsync(x => x.CoridatId == deal.SOURCE_ID)).FirstOrDefault();
@@ -52,6 +53,7 @@ namespace Application.Features.Prospecto.Command.RegistrarPorIdDeal
                 var existeMaestroProspecto = await _maestroProspectoRepository.VerificarRegistroPrevioMaestroProspecto(contact.PHONE[0].VALUE);
                 int idMaestroProspecto = 0;
                 bool ingresarProspecto = false;
+                Prospectos? prospecto = null;
                 if (existeMaestroProspecto == null)
                 {
                     idMaestroProspecto = await _maestroProspectoRepository.EstablerDatosMinimoYRegistrarMaestroProspecto(_mapper.Map<MaestroProspecto>(contact), contact.ID);
@@ -60,21 +62,37 @@ namespace Application.Features.Prospecto.Command.RegistrarPorIdDeal
                 else
                 {
                     idMaestroProspecto = existeMaestroProspecto.MaeId;
-                    ingresarProspecto = await _prospectoRepository.VerificarIngresoProspecto(existeMaestroProspecto.MaeId);
+                    (ingresarProspecto, prospecto) = await _prospectoRepository.VerificarIngresoProspecto(existeMaestroProspecto.MaeId);
                 }
                 var idProspecto = 0;
                 if (ingresarProspecto)
                 {
                     var vendedorAsignado = await _vendedorRepository.ObtenerVendedorAsignado(zonaId);
+
+                    var (nombreDirector, nombreGerenteZona) = await _vendedorRepository.ObtenerJerarQuiaComercial(vendedorAsignado);
+
                     var prospectoToCreate = _mapper.Map<Prospectos>(deal);
                     prospectoToCreate.MedId = 10;
                     idProspecto = await _prospectoRepository.EstablecerDatosMinimosYRegistrarProspecto(prospectoToCreate, idMaestroProspecto, deal.ID.ToString(), vendedorAsignado, vendedorAsignado.ZonId, origenVenta.Corivta);
-                    await _bitrix24ApiService.ActualizarDealBitrix24(deal, vendedorAsignado.BitrixID);
+                    await _bitrix24ApiService.ActualizarDealBitrix24(
+                        deal, 
+                        vendedorAsignado.BitrixID,
+                        null,
+                        null,
+                        null,
+                        null,
+                        nombreDirector,
+                        nombreGerenteZona
+                        );
                     await _bitrix24ApiService.ActualizarContactoBitrix24(contact, vendedorAsignado.BitrixID);
 
                 }
                 else
                 {
+                    if (prospecto != null)
+                    {
+                        await _bitrix24ApiService.ValidarExistenciaDealEnBitrix(prospecto.ProId);
+                    }
 
                     throw new ApplicationException($"Lead Repetido");
                 }
@@ -92,7 +110,15 @@ namespace Application.Features.Prospecto.Command.RegistrarPorIdDeal
                     Valor = JsonSerializer.Serialize(request)
                 };
                 await _unitOfWork.Repository<LogFondos>().AddAsync(log);
-                await Task.Delay(TimeSpan.FromSeconds(120));
+                if (e.Message != "Lead Repetido")
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(60));
+                }
+                else
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(20));
+
+                }
                 return 0;
             }
 

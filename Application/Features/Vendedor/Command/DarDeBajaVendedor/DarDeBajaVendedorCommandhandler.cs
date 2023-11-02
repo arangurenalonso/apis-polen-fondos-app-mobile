@@ -5,7 +5,6 @@
     using Application.Contracts.Repositories.Base;
     using Application.Contracts.Repositories;
     using Domain.Entities;
-    using Application.Helper;
     using Application.Contracts.ApiExterna;
     using Application.Models.ConsumoApi.Bitrix24.Entities;
     using Application.Models.ConsumoApi.Bitrix24.Models;
@@ -31,13 +30,26 @@
         public async Task<string> Handle(DarDeBajaVendedorCommand request, CancellationToken cancellationToken)
         {
             var vendedorCesados = await ObtenerVendedorCesados(request.CodVendedor);
+            if (vendedorCesados.VenFcese==null)
+            {
+                vendedorCesados.VenFcese = DateTime.Now;
+                await _unitOfWork.Repository<Vendedores>().UpdateAsync(vendedorCesados);
+            }
+            await _bitrix24ApiService.DesactivarUsuarioBitrix(vendedorCesados.BitrixID);
+
             var prospectosVendedorCesados = await ObtenerProspectosDelVendedor(vendedorCesados);
             var contar = 0;
+            var numRegistro = 0;
+
+
+            Console.WriteLine($"Total Registros a procesar:{prospectosVendedorCesados.Count}");
             foreach (var item in prospectosVendedorCesados)
             {
                 try
                 {
-                    contar++;
+                    numRegistro++;
+                    Console.WriteLine($"Inicio Nro:{numRegistro}");
+
                     var deal = await _bitrix24ApiService.ValidarExistenciaDealEnBitrix(item.ProId);
                     var contact = await _bitrix24ApiService.CRMContactGet(deal.CONTACT_ID);
 
@@ -45,21 +57,29 @@
 
                     await ActualizarDealBitrix24(deal, vendedorAsignado);
                     await ActualizarContactoBitrix24(contact, vendedorAsignado);
-                    await _bitrix24ApiService.DesactivarUsuarioBitrix(vendedorCesados.BitrixID);
 
-                    var prospectoCopy = MethodHelper.DeepCopy<Prospectos>(item);
-                    prospectoCopy.ProId = 0;
+                    Prospectos prospectoCopy = _mapper.Map<Prospectos, Prospectos>(item);
                     prospectoCopy.VenCod = vendedorAsignado.VenCod;
                     prospectoCopy.VenSupcod = vendedorAsignado.VenSupCod;
                     prospectoCopy.VenGescod = vendedorAsignado.VenGesCod;
                     prospectoCopy.VenGercod = vendedorAsignado.VenGerCod;
                     await _unitOfWork.Repository<Prospectos>().AddAsync(prospectoCopy);
 
+
                     item.MotdesId = 12;
-                    await _unitOfWork.Repository<Prospectos>().UpdateAsync(prospectoCopy);
+                    item.Reasignado = true;
+                    await _unitOfWork.Repository<Prospectos>().UpdateAsync(item);
 
-                    var registrosAfectados=await _unitOfWork.Complete();
+                    Console.WriteLine($"Fin Nro:{numRegistro}");
 
+
+
+                    contar++;
+                    if (contar == 15)
+                    {
+                        contar = 0;
+                        await Task.Delay(TimeSpan.FromSeconds(120));
+                    }
                 }
                 catch (System.Exception e)
                 {
@@ -72,7 +92,7 @@
                         Valor = System.Text.Json.JsonSerializer.Serialize(item)
                     };
                     await _unitOfWork.Repository<LogFondos>().AddAsync(log);
-                    await Task.Delay(TimeSpan.FromSeconds(5));
+                    await Task.Delay(TimeSpan.FromSeconds(120));
                 }
             }
             return "Vendedor Cesado";
@@ -80,9 +100,9 @@
         public async Task<Vendedores> ObtenerVendedorCesados(string CodVendedor)
         {
             var vendedor = (await _unitOfWork.Repository<Vendedores>().GetAsync(x =>
-                    x.VenFcese != null &&
+                    //x.VenFcese == null &&
                     x.VenCarCod == "003" &&
-                    x.VenCod == CodVendedor
+                    x.VenCod.Trim() == CodVendedor.Trim()
                 )).FirstOrDefault();
             if (vendedor == null)
             {

@@ -28,7 +28,9 @@
         }
         public async Task<List<T>> GetAsync(Expression<Func<T, bool>> predicado)
         {
-            return await _context.Set<T>().Where(predicado).ToListAsync();
+            IQueryable<T> query = _context.Set<T>();
+
+            return await query.Where(predicado).ToListAsync();
         }
         /*
          Permite hacer la consulta a solo 2 entidades

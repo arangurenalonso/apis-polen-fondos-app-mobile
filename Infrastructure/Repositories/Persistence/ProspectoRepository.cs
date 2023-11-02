@@ -174,7 +174,7 @@
                                           .FirstOrDefaultAsync();
             return prospecto;
         }
-        public async Task<bool> VerificarIngresoProspecto(int idMaestroProspecto) 
+        public async Task<(bool,Prospectos? prospecto)> VerificarIngresoProspecto(int idMaestroProspecto) 
         {
             var prospecto = await _context.Prospectos
                                             .Where(x=>x.MaeId== idMaestroProspecto)
@@ -182,12 +182,12 @@
                                            .FirstOrDefaultAsync();
             if (prospecto==null)
             {
-                return true;
+                return (true,null);
             }
             DateTime fechaProspecto = prospecto.ProFecpro;
             DateTime fechaActual = DateTime.Now;
             int diasDiferencia = (fechaActual - fechaProspecto).Days;
-            return diasDiferencia >= 30;
+            return (diasDiferencia >= 30, prospecto);
         }
         public async Task<int> EstablecerDatosMinimosYRegistrarProspecto(Prospectos prospecto, 
             int idMaestroProspecto, string idDealBitrix24, Vendedores vendedor, int zonaId,string idOrigen)

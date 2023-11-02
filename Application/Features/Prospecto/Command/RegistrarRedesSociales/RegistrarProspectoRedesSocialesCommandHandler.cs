@@ -39,12 +39,18 @@
 
                 var enumCampignOrigin = getOriginCapaña(request.Plataforma!, request.Anuncio!).ToString();
                 var zonaId = getIdZonaByAnuncio(request.Anuncio);
-
+                if (zonaId==3)
+                {
+                    zonaId = 2;
+                }
                 var existeMaestroProspecto = await _maestroProspectoRepository.VerificarRegistroPrevioMaestroProspecto(request.Telefono);
                 var vendedorAsignado = await _vendedorRepository.ObtenerVendedorAsignado(zonaId);
+                var (nombreDirector, nombreGerenteZona) = await _vendedorRepository.ObtenerJerarQuiaComercial(vendedorAsignado);
                 string idContactBitrix24 = "";
                 int idMaestroProspecto = 0;
                 bool seDebeIngresarProspecto = false;
+                Prospectos? prospectoIngresado = null;
+
                 if (existeMaestroProspecto == null)
                 {
 
@@ -56,6 +62,8 @@
                         enumCampignOrigin,
                         vendedorAsignado.BitrixID
                         );
+
+
                     idMaestroProspecto = await _maestroProspectoRepository.EstablerDatosMinimoYRegistrarMaestroProspecto(_mapper.Map<MaestroProspecto>(request), idContactBitrix24);
                     seDebeIngresarProspecto = true;
                 }
@@ -63,7 +71,7 @@
                 {
                     idContactBitrix24 = existeMaestroProspecto.BitrixID;
                     idMaestroProspecto = existeMaestroProspecto.MaeId;
-                    seDebeIngresarProspecto = await _prospectoRepository.VerificarIngresoProspecto(existeMaestroProspecto.MaeId);
+                    (seDebeIngresarProspecto, prospectoIngresado) = await _prospectoRepository.VerificarIngresoProspecto(existeMaestroProspecto.MaeId);
                 }
                 var idProspecto = 0;
 
@@ -73,7 +81,12 @@
                                                             request.Anuncio,
                                                             idContactBitrix24,
                                                             enumCampignOrigin,
-                                                            vendedorAsignado.BitrixID
+                                                            vendedorAsignado.BitrixID,
+                                                            null,
+                                                            null,
+                                                            null,
+                                                            nombreDirector,
+                                                            nombreGerenteZona
                                                         );
                     idProspecto = await _prospectoRepository.EstablecerDatosMinimosYRegistrarProspecto(_mapper.Map<Prospectos>(request), idMaestroProspecto, idDealBitrix24, vendedorAsignado, zonaId, "OV12");
                 }

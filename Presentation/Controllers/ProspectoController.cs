@@ -99,7 +99,7 @@
                 if (contar == 15)
                 {
                     contar = 0;
-                    await Task.Delay(TimeSpan.FromSeconds(120));
+                    await Task.Delay(TimeSpan.FromSeconds(60));
                 }
                 contar++;
 
@@ -124,7 +124,7 @@
                 if (contar == 15)
                 {
                     contar = 0;
-                    await Task.Delay(TimeSpan.FromSeconds(120));
+                    await Task.Delay(TimeSpan.FromSeconds(60));
                 }
                 contar++;
 

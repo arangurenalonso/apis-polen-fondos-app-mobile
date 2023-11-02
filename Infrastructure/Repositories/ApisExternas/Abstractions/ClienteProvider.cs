@@ -8,10 +8,16 @@
     using System.Text;
     using System.Net;
     using System.Net.Http;
+    using System.Runtime.Intrinsics.Arm;
+    using System;
+    using Azure.Core;
+    using System.Threading.Tasks;
 
     public class ClienteProvider : IClienteProvider
     {
-        public async Task<ResponseModel<T>> ExecuteApiCall<T>(Func<Task<ResponseModel<T>>> apiOperation)
+        public async Task<ResponseModel<T>> ExecuteApiCall<T>(
+            Func<Task<ResponseModel<T>>> apiOperation,
+            Func<Exception, (string requestUrl, string requestMethod, string requestBody, int statusCode)> contextProvider)
         {
             try
             {
@@ -19,42 +25,65 @@
             }
             catch (TaskCanceledException taskCanceledException)
             {
-                return GenerateExceptionResponse<T>($"TaskCanceledException: {taskCanceledException.Message}");
+                var (requestUrl, requestMethod, requestBody, statusCode) = contextProvider(taskCanceledException);
+                return GenerateExceptionResponse<T>($"TaskCanceledException: {taskCanceledException.Message}",
+                                                   requestUrl, requestMethod, requestBody, statusCode);
             }
             catch (JsonReaderException jsonReaderException)
             {
-                return GenerateExceptionResponse<T>($"JsonReaderException: {jsonReaderException.Message}");
+                var (requestUrl, requestMethod, requestBody, statusCode) = contextProvider(jsonReaderException);
+
+                return GenerateExceptionResponse<T>($"JsonReaderException: {jsonReaderException.Message}",
+                                                   requestUrl, requestMethod, requestBody, statusCode);
             }
             catch (ArgumentNullException argumentNullException)
             {
-                return GenerateExceptionResponse<T>($"ArgumentNullException: {argumentNullException.Message}");
+                var (requestUrl, requestMethod, requestBody, statusCode) = contextProvider(argumentNullException);
+                return GenerateExceptionResponse<T>($"ArgumentNullException: {argumentNullException.Message}",
+                                                   requestUrl, requestMethod, requestBody, statusCode);
+
             }
             catch (ArgumentException argumentException)
             {
-                return GenerateExceptionResponse<T>($"ArgumentException: {argumentException.Message}");
+                var (requestUrl, requestMethod, requestBody, statusCode) = contextProvider(argumentException);
+                return GenerateExceptionResponse<T>($"ArgumentException: {argumentException.Message}",
+                                                    requestUrl, requestMethod, requestBody, statusCode);
             }
             catch (WebException webException)
             {
-                return GenerateExceptionResponse<T>($"WebException: {webException.Message}");
+                var (requestUrl, requestMethod, requestBody, statusCode) = contextProvider(webException);
+                return GenerateExceptionResponse<T>($"WebException: {webException.Message}",
+                                                    requestUrl, requestMethod, requestBody, statusCode);
             }
             catch (InvalidOperationException invalidOperationException)
             {
-                return GenerateExceptionResponse<T>($"InvalidOperationException: {invalidOperationException.Message}");
+                var (requestUrl, requestMethod, requestBody, statusCode) = contextProvider(invalidOperationException);
+                return GenerateExceptionResponse<T>($"InvalidOperationException: {invalidOperationException.Message}",
+                                                   requestUrl, requestMethod, requestBody, statusCode);
             }
             catch (TimeoutException timeoutException)
             {
-                return GenerateExceptionResponse<T>($"TimeoutException: {timeoutException.Message}");
+                var (requestUrl, requestMethod, requestBody, statusCode) = contextProvider(timeoutException);
+                return GenerateExceptionResponse<T>($"TimeoutException: {timeoutException.Message}",
+                                                   requestUrl, requestMethod, requestBody, statusCode);
             }
             catch (IOException ioException)
             {
-                return GenerateExceptionResponse<T>($"IOException: {ioException.Message}");
+                var (requestUrl, requestMethod, requestBody, statusCode) = contextProvider(ioException);
+
+                return GenerateExceptionResponse<T>($"IOException: {ioException.Message}",
+                                                   requestUrl, requestMethod, requestBody, statusCode);
             }
             catch (UnauthorizedAccessException unauthorizedAccessException)
             {
-                return GenerateExceptionResponse<T>($"UnauthorizedAccessException: {unauthorizedAccessException.Message}");
+                var (requestUrl, requestMethod, requestBody, statusCode) = contextProvider(unauthorizedAccessException);
+
+                return GenerateExceptionResponse<T>($"UnauthorizedAccessException: {unauthorizedAccessException.Message}",
+                                                   requestUrl, requestMethod, requestBody, statusCode);
             }
             catch (HttpRequestException httpRequestException)
             {
+                var (requestUrl, requestMethod, requestBody, statusCode) = contextProvider(httpRequestException);
 
                 string detailedMessage = $"HttpRequestException: {httpRequestException.Message}";
 
@@ -62,12 +91,14 @@
                 {
                     detailedMessage += $" <---> Inner Exception: {httpRequestException.InnerException.Message}";
                 }
-
-                return GenerateExceptionResponse<T>(detailedMessage);
+                return GenerateExceptionResponse<T>($"httpRequestException: {detailedMessage}",
+                                                       requestUrl, requestMethod, requestBody, statusCode);
             }
             catch (Exception ex)
             {
-                return GenerateExceptionResponse<T>($"Unhandled Exception: {ex.Message}");
+                var (requestUrl, requestMethod, requestBody, statusCode) = contextProvider(ex);
+                return GenerateExceptionResponse<T>($"Unhandled Exception: {ex.Message}",
+                                                   requestUrl, requestMethod, requestBody, statusCode);
             }
         }
 
@@ -102,14 +133,16 @@
                     ? GenerateErrorResponse<T>(answer, ResponseModel)
                         : GenerateSuccessResponse<T>(answer);
                 }
-            });
+            },
+            ex => ($"{urlBase}/{path}", "GET", $"", 400)
+            );
         }
         public Task<ResponseModel<T>> GetAsyncWithQueryParams<T>(string urlBase, string path, Dictionary<string, string> queryParams,
             string? tokenType = null, string? accessToken = null)
         {
+            string queryParamsCollection = string.Join("&", queryParams.Select(x => $"{x.Key}={x.Value}"));
             return ExecuteApiCall(async () =>
             {
-                string queryParamsCollection = string.Join("&", queryParams.Select(x => $"{x.Key}={x.Value}"));
                 var client = new HttpClient();
                 client.Timeout = TimeSpan.FromSeconds(300);
                 //Agregamos el encabezado
@@ -128,11 +161,15 @@
                 return !ResponseModel.IsSuccessStatusCode
                     ? GenerateErrorResponse<T>(answer, ResponseModel, $"QueryParams: {queryParamsCollection}")
                     : GenerateSuccessResponse<T>(answer);
-            });
+            },
+            ex => ($"{urlBase}/{path}", "GET", $"QueryParams: {queryParamsCollection}", 400)
+            );
+
         }
         public  Task<ResponseModel<T>> PostAsyncFormData<T>(string urlBase, string path, Dictionary<string, string> formData,
             string? tokenType = null, string? accessToken = null)
         {
+
             return ExecuteApiCall(async () =>
             {
                 var client = new HttpClient();
@@ -148,16 +185,23 @@
                 var url = $"{path}";
 
                 var content = new FormUrlEncodedContent(formData);
-                var formDataString = string.Join(" | ", formData.Select(kvp => $"{Uri.EscapeDataString(kvp.Key)}={Uri.EscapeDataString(kvp.Value)}"));
+                //var formDataString = string.Join(" | ", formData.Select(kvp => $"{Uri.EscapeDataString(kvp.Key)}={Uri.EscapeDataString(kvp.Value)}"));
 
                 var ResponseModel = await client.PostAsync(url, content);
 
                 var answer = await ResponseModel.Content.ReadAsStringAsync();
 
                 return !ResponseModel.IsSuccessStatusCode
-                    ? GenerateErrorResponse<T>(answer, ResponseModel, $"FormData: {formDataString}")
+                    ? GenerateErrorResponse<T>(answer, ResponseModel, 
+                                                $"FormData: {string.Join(" | ", formData.Select(kvp => $"{Uri.EscapeDataString(kvp.Key)}={Uri.EscapeDataString(kvp.Value)}"))}"
+                                                )
                     : GenerateSuccessResponse<T>(answer);
-            });
+            },
+            ex => ( $"{urlBase}/{path}", 
+                    "POST", 
+                    $"FormData: {string.Join(" | ", formData.Select(kvp => $"{Uri.EscapeDataString(kvp.Key)}={Uri.EscapeDataString(kvp.Value)}"))}",
+                    400)
+            );
         }
 
         public  Task<ResponseModel<T>> PostAsyncFormData<T>(string urlBase, string path, Dictionary<string, string> formData,
@@ -199,7 +243,14 @@
                             : $"FormData: file={file.FileName}"
                         )
                     : GenerateSuccessResponse<T>(answer);
-            });
+            },
+            ex => ( $"{urlBase}/{path}", 
+                    "POST",
+                    formData.Any()
+                        ? $"FormData: {string.Join(" | ", formData.Select(kvp => $"{Uri.EscapeDataString(kvp.Key)}={Uri.EscapeDataString(kvp.Value)}"))} | file= {file.FileName}"
+                        : $"FormData: file={file.FileName}", 
+                    400)
+            );
         }
         public Task<ResponseModel<T>> PostAsyncJson<T>(string urlBase, string path, Object model,
             string? tokenType = null, string? accessToken = null)
@@ -226,7 +277,12 @@
                 return !ResponseModel.IsSuccessStatusCode
                     ? GenerateErrorResponse<T>(answer, ResponseModel, request)
                     : GenerateSuccessResponse<T>(answer);
-            });
+            },
+            ex => ( $"{urlBase}/{path}", 
+                    "POST", 
+                    JsonConvert.SerializeObject(model), 
+                    400)
+            );
         }
         public Task<ResponseModel<T>> UploadFileAsync<T>(string urlBase, string path, string filePath,
             string? tokenType = null, string? accessToken = null)
@@ -265,7 +321,9 @@
                             : GenerateSuccessResponse<T>(answer);
                     }
                 }
-            });
+            },
+            ex => ($"{urlBase}/{path}", "POST", $"filePath:'{filePath}'", 400)
+            );
 
         }
         public Task<ResponseModel<T>> PutAsync<T>(string urlBase, string path, Object model, int id,
@@ -292,7 +350,9 @@
                 return !ResponseModel.IsSuccessStatusCode
                     ? GenerateErrorResponse<T>(answer, ResponseModel, request)
                     : GenerateSuccessResponse<T>(answer);
-            });
+            },
+            ex => ($"{urlBase}/{path}", "PUT", JsonConvert.SerializeObject(model), 400)
+            );
         }
         public Task<ResponseModel<T>> DeleteAsync<T>(string urlBase, string path,
             string? tokenType = null, string? accessToken = null)
@@ -317,7 +377,9 @@
                 return !ResponseModel.IsSuccessStatusCode
                     ? GenerateErrorResponse<T>(answer, ResponseModel)
                     : GenerateSuccessResponse<T>(answer);
-            });
+            },
+            ex => ($"{urlBase}/{path}", "DELETE", "", 400)
+            );
         }
         private static string GetMimeType(string filePath)
         {
@@ -446,12 +508,26 @@
                 Message = "Petición exitosa"
             };
         }
-        private ResponseModel<T> GenerateExceptionResponse<T>(string message)
+        private ResponseModel<T> GenerateExceptionResponse<T>(string message, string requestUrl, string requestMethod, string requestBody, int statusCode)
         {
+            var errorDetails = new ErrorClientProviderDetails
+            {
+                IsSuccess = false,
+                Message = "Ocurrió un error durante la conexión con la API",
+                RequestUrl = requestUrl,
+                RequestMethod = requestMethod,
+                RequestBody = requestBody,
+                ApiResponse = message,
+                HttpStatusCode = statusCode,
+                TimeStamp = DateTime.UtcNow
+            };
+            var serializedError = JsonConvert.SerializeObject(errorDetails);
+
             return new ResponseModel<T>
             {
                 IsSuccess = false,
                 Message = "Se ha generado una excepción en el procesamiento de la peteción: " + message,
+                Errores = errorDetails
             };
         }
 

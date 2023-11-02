@@ -27,7 +27,9 @@
             string idUsuarioBitrix,
             int? motDesId = null,
             int? estId = null,
-            int? estContactoId = null);
+            int? estContactoId = null,
+            string? nombreDirector = null,
+            string? nombreGerenteZona = null);
         Task<string> RegistrarContactoBitrix24(
             string nombre,
             string? apellido,
@@ -41,11 +43,13 @@
             string idUsuarioBitrix
             );
         Task<string> ActualizarDealBitrix24(
-            DealBitrix24 dealBitrix24,
-            string idUsuarioBitrix,
-            int? motDesId = null,
-            int? estId = null,
-            int? estContactoId = null,
-            string? origenBitrix = null);
+           DealBitrix24 dealBitrix24,
+           string idUsuarioBitrix,
+           int? motDesId = null,
+           int? estId = null,
+           int? estContactoId = null,
+           string? origenBitrix = null,
+           string? nombreDirector = null,
+           string? nombreGerenteZona = null);
     }
 }

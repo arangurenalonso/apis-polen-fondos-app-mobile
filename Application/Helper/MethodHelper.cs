@@ -51,12 +51,29 @@
             return fecha.ToString("ddMMyyyy");
         }
 
-        public static T DeepCopy<T>(T original)
+        public static T DeepCopyReferenceIgnore<T>(T original)
         {
             if (original == null) return default(T);
-            string json = JsonConvert.SerializeObject(original);
+
+            var settings = new JsonSerializerSettings
+            {
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+            };
+
+            string json = JsonConvert.SerializeObject(original, settings);
             return JsonConvert.DeserializeObject<T>(json);
         }
+        public static T DeepCopyWithReference<T>(T original)
+        {
+            if (original == null) return default(T);
 
+            var settings = new JsonSerializerSettings
+            {
+                PreserveReferencesHandling = PreserveReferencesHandling.Objects
+            };
+
+            string json = JsonConvert.SerializeObject(original, settings);
+            return JsonConvert.DeserializeObject<T>(json);
+        }
     }
 }

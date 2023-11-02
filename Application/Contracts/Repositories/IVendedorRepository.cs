@@ -7,5 +7,6 @@
     {
         Task<Vendedores> ObtenerVendedorAsignado(int idZona = 0, string? codSupervisor = "");
         Task<Vendedores> ObtenerVendedorPorCodigo(string codVendedor);
+        Task<(string nombreDirector, string nombreGerenteZona)> ObtenerJerarQuiaComercial(Vendedores vendedor);
     } 
 }

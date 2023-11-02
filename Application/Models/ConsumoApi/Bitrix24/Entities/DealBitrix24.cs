@@ -18,6 +18,10 @@
         public string UF_CRM_1695762208 { get; set; } = "";
         public string UF_CRM_1695762237 { get; set; } = "";
         public string UF_CRM_1695762254 { get; set; } = "";
+        public string UF_CRM_1697215179 { get; set; } = "";//Gerente
+        public string UF_CRM_1697215223 { get; set; } = "";//Director
+
+
 
     }
 }

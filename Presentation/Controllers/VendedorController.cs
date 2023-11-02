@@ -16,8 +16,8 @@
         public async Task<ActionResult<string>> DarDeBajaVendedor([FromBody] DarDeBajaVendedorCommand command)
         {
 
-            var vendedor = await _mediator.Send(command);
-            return Ok($"Cese Correcto");
+            var response = await _mediator.Send(command);
+            return Ok(response);
         }
     }
 }

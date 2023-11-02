@@ -133,7 +133,7 @@
 
         public async Task<bool> DesactivarUsuarioBitrix(string? bitrixID)
         {
-            var path = $"{_initialPath}/crm.deal.update";
+            var path = $"{_initialPath}/user.update";
 
             var request = new
             {
@@ -169,6 +169,7 @@
         {
             var prospecto=await _prospectoRepository.ObtenerProspectoPorId(prospectoId);
             var vendedorAsignado = await _vendedorRepository.ObtenerVendedorPorCodigo(prospecto.VenCod);
+            var (nombreDirector, nombreGerenteZona) = await _vendedorRepository.ObtenerJerarQuiaComercial(vendedorAsignado);
             var (existeDealEnBitrix, dealBitrixExiste) = await ValdiarExistenciaDeDealEnBitrix(prospecto.BitrixID);
             if (existeDealEnBitrix)
             {
@@ -176,7 +177,7 @@
                                         prospecto.Corivta,
                                         prospecto.ZonId, 
                                         prospecto.MedId,
-                                        prospecto.ProCom, 
+                                        prospecto.ProCom,
                                         dealBitrixExiste.SOURCE_ID
                                         );
                 await ActualizarDealBitrix24(
@@ -185,7 +186,9 @@
                                          prospecto.MotdesId,
                                          prospecto.EstId,
                                          prospecto.EstContactoId,
-                                         origenBitrix
+                                         origenBitrix,
+                                         nombreDirector,
+                                         nombreGerenteZona
                                     );
                 return dealBitrixExiste;
             }
@@ -204,13 +207,15 @@
                     if (listaDeals.Count == 0)
                     {
                         var idDealBitrix24 = await RegistrarDealBitrix24(
-                                                                prospecto.ProCom,
+                                                                prospecto.Origin == "APP" ? "Generado Desde APP" : prospecto.ProCom,
                                                                 maestroProspecto.BitrixID,
                                                                 contactoBitrixExiste.SOURCE_ID,
                                                                 vendedorAsignado.BitrixID,
                                                                 prospecto.MotdesId,
                                                                 prospecto.EstId,
-                                                                prospecto.EstContactoId
+                                                                prospecto.EstContactoId,
+                                                                nombreDirector,
+                                                                nombreGerenteZona
                                                             );
                         prospecto.BitrixID = idDealBitrix24;
                         await _unitOfWork.Repository<Prospectos>().UpdateAsync(prospecto);
@@ -230,13 +235,15 @@
                         if (ultimoBitrixIdOrDefault==null)
                         {
                             var idDealBitrix24 = await RegistrarDealBitrix24(
-                                                                   prospecto.ProCom,
+                                                                   prospecto.Origin == "APP" ? "Generado Desde APP" : prospecto.ProCom,
                                                                    maestroProspecto.BitrixID,
                                                                    contactoBitrixExiste.SOURCE_ID,
                                                                    vendedorAsignado.BitrixID,
                                                                    prospecto.MotdesId,
                                                                    prospecto.EstId,
-                                                                   prospecto.EstContactoId
+                                                                   prospecto.EstContactoId,
+                                                                   nombreDirector,
+                                                                   nombreGerenteZona
                                                                );
                             prospecto.BitrixID = idDealBitrix24;
                             await _unitOfWork.Repository<Prospectos>().UpdateAsync(prospecto);
@@ -261,7 +268,9 @@
                                                          prospecto.MotdesId,
                                                          prospecto.EstId,
                                                          prospecto.EstContactoId,
-                                                         origenBitrix
+                                                         origenBitrix,
+                                                                 nombreDirector,
+                                                                 nombreGerenteZona
                                                     );
                             }
 
@@ -293,13 +302,15 @@
                     await _unitOfWork.Repository<MaestroProspecto>().UpdateAsync(maestroProspecto);
 
                     var idDealBitrix24 = await RegistrarDealBitrix24(
-                                                            prospecto.ProCom,
+                                                            prospecto.Origin == "APP" ? "Generado Desde APP" : prospecto.ProCom,
                                                             idContactBitrix24,
                                                             campanaOrigen,
                                                             vendedorAsignado.BitrixID,
                                                             prospecto.MotdesId,
                                                             prospecto.EstId,
-                                                            prospecto.EstContactoId
+                                                            prospecto.EstContactoId,
+                                                            nombreDirector,
+                                                            nombreGerenteZona
                                                         );
                     prospecto.BitrixID = idDealBitrix24;
                     await _unitOfWork.Repository<Prospectos>().UpdateAsync(prospecto);
@@ -309,7 +320,43 @@
                
             }
         }
+        public async Task<string> ActualizarDealBitrix24(
+           DealBitrix24 dealBitrix24,
+           string idUsuarioBitrix,
+           int? motDesId = null,
+           int? estId = null,
+           int? estContactoId = null,
+           string? origenBitrix = null,
+           string? nombreDirector = null,
+           string? nombreGerenteZona = null)
+        {
 
+            dealBitrix24.ASSIGNED_BY_ID = idUsuarioBitrix;
+            if (!string.IsNullOrWhiteSpace(origenBitrix))
+            {
+                dealBitrix24.SOURCE_ID = origenBitrix;
+            }
+            if (motDesId != null || estId != null || estContactoId != null)
+            {
+                dealBitrix24 = await SetarEstado(dealBitrix24, motDesId, estId, estContactoId);
+            }
+            if (!string.IsNullOrWhiteSpace(nombreDirector))
+            {
+                dealBitrix24.UF_CRM_1697215223 = nombreDirector;
+            }
+            if (!string.IsNullOrWhiteSpace(nombreGerenteZona))
+            {
+                dealBitrix24.UF_CRM_1697215179 = nombreGerenteZona;
+            }
+            var request = new UpdateBitrixModel<DealBitrix24>()
+            {
+                id = dealBitrix24.ID.ToString(),
+                fields = dealBitrix24
+            };
+
+            var result = await CRMDealUpdate(request);
+            return result;
+        }
         private string ObtenerOrigenFromApp(string corivta, int? zonaId, int? medId, string? proCom, string? bitrixSourceId)
         {
             if(corivta== "OV12")
@@ -400,7 +447,9 @@
             string idUsuarioBitrix,
             int? motDesId=null,
             int? estId=null,
-            int? estContactoId=null)
+            int? estContactoId=null,
+            string? nombreDirector = null,
+            string? nombreGerenteZona = null)
         {
             var obj = new DealBitrix24
             {
@@ -416,6 +465,14 @@
             if (motDesId!=null || estId != null || estContactoId != null )
             {
                 obj =await  SetarEstado(obj, motDesId, estId, estContactoId);
+            }
+            if (!string.IsNullOrWhiteSpace(nombreDirector))
+            {
+                obj.UF_CRM_1697215223 = nombreDirector;
+            }
+            if (!string.IsNullOrWhiteSpace(nombreGerenteZona))
+            {
+                obj.UF_CRM_1697215179 = nombreGerenteZona;
             }
 
             var request = new ApiRequestBitrixCreate<DealBitrix24>()
@@ -574,10 +631,10 @@
                         razonNoContacto = estadoContactado.Title;
                     }
                 }
-                deal.UF_CRM_1695762208 = estado;
-                deal.UF_CRM_1695762237 = razonNoContacto;
-                deal.UF_CRM_1695762254 = razonDescarte;
             }
+            deal.UF_CRM_1695762208 = estado;
+            deal.UF_CRM_1695762237 = razonNoContacto;
+            deal.UF_CRM_1695762254 = razonDescarte;
             return deal;
         }
         
@@ -598,33 +655,7 @@
             var result = await CRMContactUpdate(request);
             return result;
         }
-        public async Task<string> ActualizarDealBitrix24(
-            DealBitrix24 dealBitrix24, 
-            string idUsuarioBitrix,
-            int? motDesId = null,
-            int? estId = null,
-            int? estContactoId = null,
-            string? origenBitrix=null)
-        {
-
-            dealBitrix24.ASSIGNED_BY_ID = idUsuarioBitrix;
-            if (origenBitrix!=null)
-            {
-                dealBitrix24.SOURCE_ID = origenBitrix;
-            }
-            if (motDesId != null || estId != null || estContactoId != null)
-            {
-                dealBitrix24 = await SetarEstado(dealBitrix24, motDesId, estId, estContactoId);
-            }
-            var request = new UpdateBitrixModel<DealBitrix24>()
-            {
-                id = dealBitrix24.ID.ToString(),
-                fields = dealBitrix24
-            };
-
-            var result = await CRMDealUpdate(request);
-            return result;
-        }
+       
 
       
     }

@@ -28,7 +28,7 @@
             
             try
             {
-
+                //2460+2+523
                 var deal=await _bitrix24ApiService.ValidarExistenciaDealEnBitrix(request.ProspectoId);
                 return request.ProspectoId;
             }
@@ -45,7 +45,7 @@
                 };
                 await _unitOfWork.Repository<LogFondos>().AddAsync(log);
                 await Task.Delay(TimeSpan.FromSeconds(10));
-                throw;
+                return 1;
             }
         }
     }

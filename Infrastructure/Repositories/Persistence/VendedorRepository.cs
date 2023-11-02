@@ -27,6 +27,15 @@
             }
             return vendedor;
         }
+        public async Task<(string nombreDirector,string nombreGerenteZona)> ObtenerJerarQuiaComercial(Vendedores vendedor)
+        {
+            var JerarquiaComercial = await GetAsync(x =>
+                                                    x.VenCod == vendedor.VenSupCod ||
+                                                    x.VenCod == vendedor.VenGesCod);
+            var nombreDirector = JerarquiaComercial.Where(x => x.VenCod == vendedor.VenSupCod).FirstOrDefault()?.VenNom;
+            var nombreGerenteZona = JerarquiaComercial.Where(x => x.VenCod == vendedor.VenGesCod).FirstOrDefault()?.VenNom;
+            return (nombreDirector??"", nombreGerenteZona??"");
+        }
         public async Task<Vendedores> ObtenerVendedorAsignado(int idZona=0,string? codSupervisor="")
         {
             var idZonaAEvaluar = idZona;
@@ -52,12 +61,13 @@
                                                                     x.VenFcese == null &&
                                                                     x.Plead > 0//Los vendedores con Plead en 0
                                                                                //son vendedores que no se les puede asignar
-                                                            );
-
+            
+                                                                    );
+            
             var vendedoresDisponiblesAsignar = vendedoresActivosDisponiblesPorZona
                                                                 .Where(x => x.Qlead < x.Plead)
                                                                 .ToList();
-            if (!vendedoresDisponiblesAsignar.Any())
+            if (!vendedoresDisponiblesAsignar.Any()|| vendedoresDisponiblesAsignar.Count==0)
             {
                 foreach (var vendedor in vendedoresActivosDisponiblesPorZona)
                 {
