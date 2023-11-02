@@ -4,7 +4,7 @@
     { 
         public int? ID { get; set; }
         public string? TITLE { get; set; } 
-        public string? TYPE_ID { get; set; }
+        public string? TYPE_ID { get; set; } 
         public string? STAGE_ID { get; set; } 
         public string? COMPANY_ID { get; set; }
         public string? CONTACT_ID { get; set; }

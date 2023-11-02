@@ -41,5 +41,12 @@
             { ZonaEnum.Medellin, "MEDELLIN" },
             { ZonaEnum.Antioquia, "ANTIOQUIA" },
         };
+        public static Dictionary<TipoNegociacionEnum, string> TipoNegociacionEnumDict = new Dictionary<TipoNegociacionEnum, string>()
+        {
+            { TipoNegociacionEnum.VENTA_DIGITAL_B2C, "SALE" },
+            { TipoNegociacionEnum.VENTA_PRESENCIAL_B2C, "COMPLEX" },
+            { TipoNegociacionEnum.VENTA_CONTACT_CENTER_B2C, "GOODS" },
+            { TipoNegociacionEnum.VENTA_ALIANZAS_B2B2C, "1" },
+        };
     }
 }

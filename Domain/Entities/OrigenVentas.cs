@@ -8,7 +8,7 @@
         [Column("corivta", TypeName = "varchar")]
         public string Corivta { get; set; }
 
-        [Column("cori_des", TypeName = "varchar")]
+        [Column("cori_des", TypeName = "varchar")] 
         public string CoriDes { get; set; }
 
         [Column("cori_ref", TypeName = "bit")]

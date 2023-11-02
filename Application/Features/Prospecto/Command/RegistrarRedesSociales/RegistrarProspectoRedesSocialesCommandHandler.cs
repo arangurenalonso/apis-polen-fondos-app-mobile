@@ -8,6 +8,8 @@
     using Domain.Enum.Dictionario;
     using Application.Contracts.Repositories;
     using System.Text.Json;
+    using Domain.Enum;
+
     public class RegistrarProspectoRedesSocialesCommandHandler : IRequestHandler<RegistrarProspectoRedesSocialesCommand, int>
     {
         private readonly IUnitOfWork _unitOfWork;
@@ -36,6 +38,8 @@
         {
             try
             {
+                var tipoNegociacion =
+                    EnumDictionaryProvider.TipoNegociacionEnumDict[TipoNegociacionEnum.VENTA_DIGITAL_B2C];
 
                 var enumCampignOrigin = getOriginCapaña(request.Plataforma!, request.Anuncio!).ToString();
                 var zonaId = getIdZonaByAnuncio(request.Anuncio);
@@ -78,6 +82,7 @@
                 if (seDebeIngresarProspecto)
                 {
                     var idDealBitrix24 = await _bitrix24ApiService.RegistrarDealBitrix24(
+                                                            tipoNegociacion,
                                                             request.Anuncio,
                                                             idContactBitrix24,
                                                             enumCampignOrigin,

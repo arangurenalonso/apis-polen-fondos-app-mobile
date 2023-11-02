@@ -21,6 +21,7 @@
         Task<List<DealBitrix24>> CRMDealList(Dictionary<string, object> filter);
         Task<DealBitrix24> ValidarExistenciaDealEnBitrix(int prospectoId);
         Task<string> RegistrarDealBitrix24(
+            string tipoNegociacion,
             string anuncio,
             string idContactBitrix24,
             string enumCampignOrigin,
@@ -44,6 +45,7 @@
             );
         Task<string> ActualizarDealBitrix24(
            DealBitrix24 dealBitrix24,
+           string tipoNegociacion,
            string idUsuarioBitrix,
            int? motDesId = null,
            int? estId = null,

@@ -168,20 +168,26 @@
         public async Task<DealBitrix24> ValidarExistenciaDealEnBitrix(int prospectoId)
         {
             var prospecto=await _prospectoRepository.ObtenerProspectoPorId(prospectoId);
+            var tipoNegociacion = prospecto.Origin == "APP"
+                    ? EnumDictionaryProvider.TipoNegociacionEnumDict[TipoNegociacionEnum.VENTA_PRESENCIAL_B2C]
+                    : EnumDictionaryProvider.TipoNegociacionEnumDict[TipoNegociacionEnum.VENTA_DIGITAL_B2C];
             var vendedorAsignado = await _vendedorRepository.ObtenerVendedorPorCodigo(prospecto.VenCod);
             var (nombreDirector, nombreGerenteZona) = await _vendedorRepository.ObtenerJerarQuiaComercial(vendedorAsignado);
             var (existeDealEnBitrix, dealBitrixExiste) = await ValdiarExistenciaDeDealEnBitrix(prospecto.BitrixID);
             if (existeDealEnBitrix)
             {
-                var origenBitrix = ObtenerOrigenFromApp(
-                                        prospecto.Corivta,
-                                        prospecto.ZonId, 
-                                        prospecto.MedId,
-                                        prospecto.ProCom,
+                var (origenBitrix,nombreCampana) = await ObtenerOrigenFromApp(
+                                        //prospecto.Corivta,
+                                        //prospecto.ZonId, 
+                                        //prospecto.MedId,
+                                        //prospecto.ProCom,
                                         dealBitrixExiste.SOURCE_ID
                                         );
+
+                
                 await ActualizarDealBitrix24(
                                          dealBitrixExiste,
+                                         tipoNegociacion,
                                          vendedorAsignado.BitrixID,
                                          prospecto.MotdesId,
                                          prospecto.EstId,
@@ -207,7 +213,11 @@
                     if (listaDeals.Count == 0)
                     {
                         var idDealBitrix24 = await RegistrarDealBitrix24(
-                                                                prospecto.Origin == "APP" ? "Generado Desde APP" : prospecto.ProCom,
+                                                                tipoNegociacion,
+                                                                prospecto.Origin == "APP" ? "Generado Desde APP" : await ObtenerTitleDealFromCorivta(prospecto.Corivta,
+                                                                                                                                                         prospecto.ZonId,
+                                                                                                                                                         prospecto.MedId,
+                                                                                                                                                         prospecto.ProCom),
                                                                 maestroProspecto.BitrixID,
                                                                 contactoBitrixExiste.SOURCE_ID,
                                                                 vendedorAsignado.BitrixID,
@@ -235,15 +245,19 @@
                         if (ultimoBitrixIdOrDefault==null)
                         {
                             var idDealBitrix24 = await RegistrarDealBitrix24(
-                                                                   prospecto.Origin == "APP" ? "Generado Desde APP" : prospecto.ProCom,
-                                                                   maestroProspecto.BitrixID,
-                                                                   contactoBitrixExiste.SOURCE_ID,
-                                                                   vendedorAsignado.BitrixID,
-                                                                   prospecto.MotdesId,
-                                                                   prospecto.EstId,
-                                                                   prospecto.EstContactoId,
-                                                                   nombreDirector,
-                                                                   nombreGerenteZona
+                                                                    tipoNegociacion,
+                                                                    prospecto.Origin == "APP" ? "Generado Desde APP" : await ObtenerTitleDealFromCorivta(prospecto.Corivta,
+                                                                                                                                                         prospecto.ZonId,
+                                                                                                                                                         prospecto.MedId,
+                                                                                                                                                         prospecto.ProCom),
+                                                                    maestroProspecto.BitrixID,
+                                                                    contactoBitrixExiste.SOURCE_ID,
+                                                                    vendedorAsignado.BitrixID,
+                                                                    prospecto.MotdesId,
+                                                                    prospecto.EstId,
+                                                                    prospecto.EstContactoId,
+                                                                    nombreDirector,
+                                                                    nombreGerenteZona
                                                                );
                             prospecto.BitrixID = idDealBitrix24;
                             await _unitOfWork.Repository<Prospectos>().UpdateAsync(prospecto);
@@ -255,15 +269,16 @@
                             var dealBitrixToUpdate= listaDeals.Where(x=>x.ID.ToString()== ultimoBitrixIdOrDefault).FirstOrDefault();
                             if (dealBitrixToUpdate != null)
                             {
-                                var origenBitrix = ObtenerOrigenFromApp(
-                                                        prospecto.Corivta,
-                                                        prospecto.ZonId,
-                                                        prospecto.MedId,
-                                                        prospecto.ProCom,
+                                var (origenBitrix, nombreCampana) = await  ObtenerOrigenFromApp(
+                                                        //prospecto.Corivta,
+                                                        //prospecto.ZonId,
+                                                        //prospecto.MedId,
+                                                        //prospecto.ProCom,
                                                         dealBitrixToUpdate.SOURCE_ID
                                                         );
                                 await ActualizarDealBitrix24(
                                                          dealBitrixToUpdate,
+                                                         tipoNegociacion,
                                                          vendedorAsignado.BitrixID,
                                                          prospecto.MotdesId,
                                                          prospecto.EstId,
@@ -302,7 +317,11 @@
                     await _unitOfWork.Repository<MaestroProspecto>().UpdateAsync(maestroProspecto);
 
                     var idDealBitrix24 = await RegistrarDealBitrix24(
-                                                            prospecto.Origin == "APP" ? "Generado Desde APP" : prospecto.ProCom,
+                                                            tipoNegociacion,
+                                                            prospecto.Origin == "APP" ? "Generado Desde APP" : await ObtenerTitleDealFromCorivta(prospecto.Corivta,
+                                                                                                                                                 prospecto.ZonId,
+                                                                                                                                                 prospecto.MedId,
+                                                                                                                                                 prospecto.ProCom),
                                                             idContactBitrix24,
                                                             campanaOrigen,
                                                             vendedorAsignado.BitrixID,
@@ -322,6 +341,7 @@
         }
         public async Task<string> ActualizarDealBitrix24(
            DealBitrix24 dealBitrix24,
+           string tipoNegociacion,
            string idUsuarioBitrix,
            int? motDesId = null,
            int? estId = null,
@@ -332,6 +352,7 @@
         {
 
             dealBitrix24.ASSIGNED_BY_ID = idUsuarioBitrix;
+            dealBitrix24.TYPE_ID = tipoNegociacion;
             if (!string.IsNullOrWhiteSpace(origenBitrix))
             {
                 dealBitrix24.SOURCE_ID = origenBitrix;
@@ -357,9 +378,10 @@
             var result = await CRMDealUpdate(request);
             return result;
         }
-        private string ObtenerOrigenFromApp(string corivta, int? zonaId, int? medId, string? proCom, string? bitrixSourceId)
+        private async Task<string> ObtenerTitleDealFromCorivta(
+           string corivta, int? zonaId, int? medId, string? proCom)
         {
-            if(corivta== "OV12")
+            if (corivta == "OV12")
             {
                 var sourceIDNuevo = "";
                 var ciudad = "";
@@ -374,7 +396,8 @@
                             ciudad = "MEDELLIN";
                             break;
                         case 3:
-                            ciudad = "ANTIOQUIA";
+                            //ciudad = "ANTIOQUIA";
+                            ciudad = "MEDELLIN";
                             break;
                         default:
                             break;
@@ -412,35 +435,142 @@
                     string.IsNullOrEmpty(plataforma) ||
                     string.IsNullOrEmpty(producto))
                 {
-                    return bitrixSourceId;
+                    var campaignString = $"{ciudad}_{producto}_{plataforma}";
+                    return campaignString;
                 }
                 else
                 {
                     var campaignString = $"{ciudad}_{producto}_{plataforma}";
-                    return ((int)EnumDictionaryProvider.CampaignOriginEnumDict.FirstOrDefault(pair => pair.Value == campaignString).Key).ToString();
+                    var origenString = ((int)EnumDictionaryProvider.CampaignOriginEnumDict.FirstOrDefault(pair => pair.Value == campaignString).Key).ToString();
+                    return origenString;
                 }
+            }
+            var origenVenta = (await _unitOfWork.Repository<OrigenVentas>().GetAsync(x => x.Corivta == corivta)).FirstOrDefault();
+            if (origenVenta != null)
+            {
+                return origenVenta.CoriDes;
+            }
+            throw new NotFoundException($"ObtenerTitleDealFromCorivta-No se encontro el origden de ventas con corivta = '{corivta}'");
+        }
+        private async  Task<(string,string)> ObtenerOrigenFromApp(
+            //string corivta, int? zonaId, int? medId, string? proCom, 
+            string? bitrixSourceId)
+        {
+            //if(corivta== "OV12")
+            //{
+            //    var sourceIDNuevo = "";
+            //    var ciudad = "";
+            //    if (zonaId != null)
+            //    {
+            //        switch (zonaId)
+            //        {
+            //            case 1:
+            //                ciudad = "BOGOTA";
+            //                break;
+            //            case 2:
+            //                ciudad = "MEDELLIN";
+            //                break;
+            //            case 3:
+            //                //ciudad = "ANTIOQUIA";
+            //                ciudad = "MEDELLIN";
+            //                break;
+            //            default:
+            //                break;
+            //        }
+            //    }
+            //    var plataforma = "";
+            //    if (medId != null)
+            //    {
+            //        switch (medId)
+            //        {
+            //            case 1:
+            //                plataforma = "META";
+            //                break;
+            //            case 25:
+            //                plataforma = "TIKTOK";
+            //                break;
+            //            default:
+            //                break;
+            //        }
+            //    }
+            //    var producto = "";
 
-            }
-            else if (corivta == "OV02")
-            {
-                return "1";
-            }
-            else if (corivta == "OV03")
-            {
-                return "66";
+            //    if (proCom != null)
+            //    {
+            //        if (proCom.Contains("_AUTO_"))
+            //        {
+            //            producto = "AUTO";
+            //        }
+            //        if (proCom.Contains("_SEMINUEVO_"))
+            //        {
+            //            producto = "SEMINUEVO";
+            //        }
+            //    }
+            //    if (string.IsNullOrEmpty(ciudad) ||
+            //        string.IsNullOrEmpty(plataforma) ||
+            //        string.IsNullOrEmpty(producto))
+            //    {
+            //        var origenString = bitrixSourceId;
+            //        int origenStringInt = 0;
+            //        bool result = int.TryParse(origenString, out origenStringInt);
+            //        if (result)
+            //        {
+            //            CampaignOriginEnum campaignOriginEnumValue;
+            //            var isDefined = Enum.IsDefined(typeof(CampaignOriginEnum), origenStringInt);
+            //            if (isDefined)
+            //            {
+            //                campaignOriginEnumValue = (CampaignOriginEnum)origenStringInt;
+            //                var campaignString = EnumDictionaryProvider.CampaignOriginEnumDict
+            //                                         .FirstOrDefault(pair => pair.Key == campaignOriginEnumValue).Value?.ToString();
+            //                return (bitrixSourceId, campaignString);
+            //            }
+            //            else
+            //            {
 
-            }
-            else if (corivta == "OV04")
+            //                // TODO
+            //            }
+            //        }
+            //        else
+            //        {
+            //            // TODO
+            //        }                    
+            //    }
+            //    else
+            //    {
+            //        var campaignString = $"{ciudad}_{producto}_{plataforma}";
+            //        var origenString = ((int)EnumDictionaryProvider.CampaignOriginEnumDict.FirstOrDefault(pair => pair.Value == campaignString).Key).ToString();
+            //        return (origenString, campaignString);
+            //    }
+            //}
+
+
+            var origenVenta = (await _unitOfWork.Repository<OrigenVentas>().GetAsync(x => x.CoridatId == bitrixSourceId)).FirstOrDefault();
+            if (origenVenta != null)
             {
-                return "65";
+                return (origenVenta.CoridatId, origenVenta.CoriDes);
             }
-            else
+
+            var origenString = bitrixSourceId;
+            int origenStringInt = 0;
+            bool result = int.TryParse(origenString, out origenStringInt);
+            if (result)
             {
-                return bitrixSourceId;
-            }     
+                CampaignOriginEnum campaignOriginEnumValue;
+                var isDefined = Enum.IsDefined(typeof(CampaignOriginEnum), origenStringInt);
+                if (isDefined)
+                {
+                    campaignOriginEnumValue = (CampaignOriginEnum)origenStringInt;
+                    var campaignString = EnumDictionaryProvider.CampaignOriginEnumDict
+                                             .FirstOrDefault(pair => pair.Key == campaignOriginEnumValue).Value?.ToString();
+                    return (bitrixSourceId, campaignString);
+                }
+            }
+
+            throw new NotFoundException($"ObtenerOrigenFromApp-No se encontro el origden de ventas con bitrixSourceId = '{bitrixSourceId}'");
         }
 
         public async Task<string> RegistrarDealBitrix24(
+            string tipoNegociacion,
             string anuncio, 
             string idContactBitrix24,
             string enumCampignOrigin,
@@ -462,6 +592,8 @@
                 UF_CRM_1695762237 = "",
                 UF_CRM_1695762254 = "",
             };
+
+            obj.TYPE_ID = tipoNegociacion;
             if (motDesId!=null || estId != null || estContactoId != null )
             {
                 obj =await  SetarEstado(obj, motDesId, estId, estContactoId);

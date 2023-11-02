@@ -8,6 +8,8 @@ using Application.Models.ConsumoApi.Bitrix24.Entities;
 using Application.Models.ConsumoApi.Bitrix24.Models;
 using System.Text.Json;
 using Application.Exception;
+using Domain.Enum.Dictionario;
+using Domain.Enum;
 
 namespace Application.Features.Prospecto.Command.RegistrarPorIdDeal
 {
@@ -40,7 +42,10 @@ namespace Application.Features.Prospecto.Command.RegistrarPorIdDeal
         {
             try
             {
-                
+
+                var tipoNegociacion =
+                    EnumDictionaryProvider.TipoNegociacionEnumDict[TipoNegociacionEnum.VENTA_DIGITAL_B2C];
+
                 var zonaId = 0;//Si ZonaId = 0 => Enviar a todos
                 var deal = await _bitrix24ApiService.CRMDealGet(request.Id.ToString());
                 var origenVenta = (await _unitOfWork.Repository<OrigenVentas>().GetAsync(x => x.CoridatId == deal.SOURCE_ID)).FirstOrDefault();
@@ -75,7 +80,8 @@ namespace Application.Features.Prospecto.Command.RegistrarPorIdDeal
                     prospectoToCreate.MedId = 10;
                     idProspecto = await _prospectoRepository.EstablecerDatosMinimosYRegistrarProspecto(prospectoToCreate, idMaestroProspecto, deal.ID.ToString(), vendedorAsignado, vendedorAsignado.ZonId, origenVenta.Corivta);
                     await _bitrix24ApiService.ActualizarDealBitrix24(
-                        deal, 
+                        deal,
+                        tipoNegociacion,
                         vendedorAsignado.BitrixID,
                         null,
                         null,
