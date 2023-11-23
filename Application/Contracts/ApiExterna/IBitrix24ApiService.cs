@@ -40,9 +40,9 @@
             string idUsuarioBitrix);
 
         Task<string> ActualizarContactoBitrix24(
-            ContactBitrix24 contactBitrix24,
-            string idUsuarioBitrix
-            );
+          ContactBitrix24 contactBitrix24,
+          string idUsuarioBitrix,
+          string? campanaOrigen = null);
         Task<string> ActualizarDealBitrix24(
            DealBitrix24 dealBitrix24,
            string tipoNegociacion,

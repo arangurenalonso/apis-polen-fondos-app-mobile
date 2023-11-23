@@ -166,11 +166,14 @@
             return response.Result.Result;
         }
         public async Task<DealBitrix24> ValidarExistenciaDealEnBitrix(int prospectoId)
-        {
+        { 
             var prospecto=await _prospectoRepository.ObtenerProspectoPorId(prospectoId);
+
             var tipoNegociacion = prospecto.Origin == "APP"
                     ? EnumDictionaryProvider.TipoNegociacionEnumDict[TipoNegociacionEnum.VENTA_PRESENCIAL_B2C]
                     : EnumDictionaryProvider.TipoNegociacionEnumDict[TipoNegociacionEnum.VENTA_DIGITAL_B2C];
+
+
             var vendedorAsignado = await _vendedorRepository.ObtenerVendedorPorCodigo(prospecto.VenCod);
             var (nombreDirector, nombreGerenteZona) = await _vendedorRepository.ObtenerJerarQuiaComercial(vendedorAsignado);
             var (existeDealEnBitrix, dealBitrixExiste) = await ValdiarExistenciaDeDealEnBitrix(prospecto.BitrixID);
@@ -184,7 +187,6 @@
                                         dealBitrixExiste.SOURCE_ID
                                         );
 
-                
                 await ActualizarDealBitrix24(
                                          dealBitrixExiste,
                                          tipoNegociacion,
@@ -304,7 +306,9 @@
                 }
                 else
                 {
-                    var campanaOrigen = "";
+
+                    var origenVentaProspecto = await _prospectoRepository.ObtenerOrigenVentaProspecto(prospecto.Corivta);
+                    var campanaOrigen = origenVentaProspecto.CoridatId;
                     var idContactBitrix24 = await RegistrarContactoBitrix24(
                        maestroProspecto.MaeNom,
                        maestroProspecto.MaePat,
@@ -565,8 +569,7 @@
                     return (bitrixSourceId, campaignString);
                 }
             }
-
-            throw new NotFoundException($"ObtenerOrigenFromApp-No se encontro el origden de ventas con bitrixSourceId = '{bitrixSourceId}'");
+            return (bitrixSourceId,"");        
         }
 
         public async Task<string> RegistrarDealBitrix24(
@@ -772,18 +775,22 @@
         
         public async Task<string> ActualizarContactoBitrix24(
           ContactBitrix24 contactBitrix24,
-          string idUsuarioBitrix
+          string idUsuarioBitrix,
+          string? campanaOrigen=null
           )
         {
             contactBitrix24.ASSIGNED_BY_ID = idUsuarioBitrix;
 
+            if (campanaOrigen != null)
+            {
+                contactBitrix24.SOURCE_ID = campanaOrigen;
+            }
             var request = new UpdateBitrixModel<ContactBitrix24>()
             {
                 id = contactBitrix24.ID,
                 fields = contactBitrix24
 
             };
-
             var result = await CRMContactUpdate(request);
             return result;
         }

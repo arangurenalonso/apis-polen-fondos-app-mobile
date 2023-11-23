@@ -158,6 +158,7 @@
         public async Task<Prospectos> ObtenerProspectoPorId(int idProspecto)
         {
             var prospecto = await _context.Prospectos
+
                                             .Where(x => x.ProId == idProspecto)
                                             .FirstOrDefaultAsync();
             if(prospecto == null)
@@ -165,6 +166,17 @@
                 throw new NotFoundException($"Prospecto con Id '{idProspecto}' no fue encontrado");
             }
             return prospecto;
+        }
+        public async Task<OrigenVentas> ObtenerOrigenVentaProspecto(string? corivta)
+        {
+            var origenVenta = await _context.OrigenVentas
+                                            .Where(x => x.Corivta == corivta)
+                                            .FirstOrDefaultAsync();
+            if (origenVenta == null)
+            {
+                throw new NotFoundException($"No se encuentra el origen con corivta: '{corivta}' ");
+            }
+            return origenVenta;
         }
         public async Task<Prospectos?> ObtenerUltimoProspectoPorIdMaestroProspecto(int idMaestroProspecto)
         {
