@@ -727,7 +727,7 @@
                 {
                     case 1://No contactado
                         estado = ((int)EstadoDealBitrixEnum.NoContactado).ToString();
-                        razonNoContacto = "";
+                        razonNoContacto = ""; 
                         razonDescarte = "";
                         break;
                     case 2://No contactado 

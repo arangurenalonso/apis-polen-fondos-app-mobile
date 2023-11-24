@@ -21,11 +21,13 @@
 
         public static Dictionary<CampaignOriginEnum, string> CampaignOriginEnumDict = new Dictionary<CampaignOriginEnum, string>()
         {
-            { CampaignOriginEnum.Meta_Bogota_AutoNuevos, "BOGOTA_AUTO_META" },
+            { CampaignOriginEnum.Meta_Bogota_AutoNuevos, "BOGOTA_AUTO_META" }, 
             { CampaignOriginEnum.TikTok_Bogota_AutoNuevos, "BOGOTA_AUTO_TIKTOK" },
             { CampaignOriginEnum.Meta_Bogota_AutoUsados, "BOGOTA_SEMINUEVO_META" },
             { CampaignOriginEnum.TikTok_Bogota_AutoUsados, "BOGOTA_SEMINUEVO_TIKTOK" },
+            { CampaignOriginEnum.FORMULARIO_HOME_WEB, "FORMULARIO_HOME_WEB" },
 
+            
 
             { CampaignOriginEnum.Meta_Medellin_AutoNuevos, "MEDELLIN_AUTO_META" },
             { CampaignOriginEnum.TikTok_Medellin_AutoNuevos, "MEDELLIN_AUTO_TIKTOK" },

@@ -1,13 +1,11 @@
 ﻿namespace Application.Features.Prospecto.Command.RegistrarRedesSociales
 {
-    using MediatR;
-    public sealed record RegistrarProspectoRedesSocialesCommand(
+    public sealed record RegistrarProspectoRedesSocialesCommandDTORequest(
         string Anuncio,
         string Plataforma,
         string Nombre,
         string? Apellido,
         string Telefono,
-        string? Email,
-        bool EsMasivo
-        ) : IRequest<int>;
+        string? Email
+        ) ;
 }

@@ -93,7 +93,7 @@
                                                             nombreDirector,
                                                             nombreGerenteZona
                                                         );
-                    idProspecto = await _prospectoRepository.EstablecerDatosMinimosYRegistrarProspecto(_mapper.Map<Prospectos>(request), idMaestroProspecto, idDealBitrix24, vendedorAsignado, zonaId, "OV12");
+                    idProspecto = await _prospectoRepository.EstablecerDatosMinimosYRegistrarProspecto(_mapper.Map<Prospectos>(request), idMaestroProspecto, idDealBitrix24, vendedorAsignado, vendedorAsignado.ZonId, "OV12");
                 }
                 else
                 {
@@ -102,7 +102,11 @@
                     {
                         await _bitrix24ApiService.ValidarExistenciaDealEnBitrix(prospecto.ProId);
                     }
-                    throw new ApplicationException($"Lead Repetido");
+                    if (request.EsMasivo)
+                    {
+                        throw new ApplicationException($"Lead Repetido");
+
+                    }
                 }
 
                 return idProspecto;
@@ -119,8 +123,16 @@
                     Valor = JsonSerializer.Serialize(request)
                 };
                 await _unitOfWork.Repository<LogFondos>().AddAsync(log);
-                await Task.Delay(TimeSpan.FromSeconds(120));
-                return 0;
+
+                if (request.EsMasivo)
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(120));
+                    return 0;
+                }
+                else
+                {
+                    throw new ApplicationException(e.Message);
+                }
             }
 
         }
@@ -128,6 +140,14 @@
 
         private int getOriginCapaña(string plataforma,string anuncio)
         {
+            switch (anuncio)
+            {
+                case var _ when anuncio == CampaignOriginEnum.FORMULARIO_HOME_WEB.GetDescription():
+                    return (int)CampaignOriginEnum.FORMULARIO_HOME_WEB;
+                default:
+                    break;
+            }
+
             char delimiter = '_';
             string[] anuncioSplit = anuncio.Split(delimiter);
             var ciudad = anuncioSplit[0].Trim().ToUpper();

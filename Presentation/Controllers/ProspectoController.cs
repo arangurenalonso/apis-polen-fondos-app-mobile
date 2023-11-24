@@ -8,6 +8,7 @@
     using Application.Features.Prospecto.Query.ObtenerDatosFoja;
     using Application.Features.Prospecto.Query.ObtenerDatosProspectoPorVendedor;
     using Application.Mappings.Prospecto.DTO;
+    using DocumentFormat.OpenXml.Spreadsheet;
     using MediatR;
     using Microsoft.AspNetCore.Mvc;
     using Presentation.Controllers.Common;
@@ -54,22 +55,40 @@
 
         [HttpPost("RedesSociales", Name = "RegistrarProspectoRedesSociales")]
         [ProducesResponseType(typeof(int), (int)HttpStatusCode.OK)]
-        public async Task<ActionResult<int>> RegistrarProspectoRedesSociales([FromBody] RegistrarProspectoRedesSocialesCommand command)
+        public async Task<ActionResult<int>> RegistrarProspectoRedesSociales([FromBody] RegistrarProspectoRedesSocialesCommandDTORequest dtoRequest)
         {
+            var command = new RegistrarProspectoRedesSocialesCommand(
+                dtoRequest.Anuncio,
+                dtoRequest.Plataforma,
+                dtoRequest.Nombre,
+                dtoRequest.Apellido,
+                dtoRequest.Telefono,
+                dtoRequest.Email,
+                false
+                );
             var prospecto = await _mediator.Send(command);
             return Ok(prospecto);
         }
         [HttpPost("RedesSociales/Masivo", Name = "RegistrarProspectoRedesSocialesMasivo")]
         [ProducesResponseType(typeof(string), (int)HttpStatusCode.OK)]
-        public async Task<ActionResult<string>> RegistrarProspectoRedesSocialesMasivo([FromBody] List<RegistrarProspectoRedesSocialesCommand> listCommand)
+        public async Task<ActionResult<string>> RegistrarProspectoRedesSocialesMasivo([FromBody] List<RegistrarProspectoRedesSocialesCommandDTORequest> listDTOS)
         {
 
             var contar = 0;
             var numRegistro = 0;
-            foreach (var command in listCommand)
+            foreach (var item in listDTOS)
             {
                 numRegistro++;
                 Console.WriteLine($"Inicio Nro:{numRegistro}");
+                var command = new RegistrarProspectoRedesSocialesCommand(
+                item.Anuncio,
+                item.Plataforma,
+                item.Nombre,
+                item.Apellido,
+                item.Telefono,
+                item.Email,
+                true
+                );
                 var prospecto = await _mediator.Send(command);
 
                 if (contar == 15)
@@ -80,7 +99,7 @@
                 contar++;
                 Console.WriteLine($"Fin Nro:{numRegistro}");
             }
-            return Ok($"Se cargaron correctamente {listCommand.Count}");
+            return Ok($"Se cargaron correctamente {listDTOS.Count}");
         }
 
         [HttpPost("IdDeal/Masivo", Name = "RegistrarPorIdDeal")]
