@@ -4,7 +4,7 @@
 
     [Table("origenventas")]
     public class OrigenVentas
-    {
+    { 
         [Column("corivta", TypeName = "varchar")]
         public string Corivta { get; set; }
 

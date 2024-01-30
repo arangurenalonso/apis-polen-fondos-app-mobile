@@ -9,6 +9,7 @@
     using Application.Contracts.Repositories;
     using System.Text.Json;
     using Domain.Enum;
+    using Application.Helper;
 
     public class RegistrarProspectoRedesSocialesCommandHandler : IRequestHandler<RegistrarProspectoRedesSocialesCommand, int>
     {
@@ -38,11 +39,46 @@
         {
             try
             {
+                if (request.NumeroRegistro==1 && request.EsMasivo)
+                {
+                    var mensaje = $"Inicio - Ejecución Proceso Registro Prospecto Redes Sociales Masivo";
+                    var log = new LogFondos()
+                    {
+                        Fecha = DateTime.Now,
+                        Mensaje = mensaje,
+                        Tipo = "Polen",
+                        Valor = JsonSerializer.Serialize(request.NumeroRegistro)
+                    };
+                    await _unitOfWork.Repository<LogFondos>().AddAsync(log);
+                }
+                if (request.NumeroRegistro % 25 == 0)
+                {
+                    var mensaje = $"Progreso - Ejecución Proceso Registro Prospecto Redes Sociales Masivo";
+                    var log = new LogFondos()
+                    {
+                        Fecha = DateTime.Now,
+                        Mensaje = mensaje,
+                        Tipo = "Polen",
+                        Valor = JsonSerializer.Serialize(request.NumeroRegistro)
+                    };
+                    await _unitOfWork.Repository<LogFondos>().AddAsync(log);
+                }
+                if (request.EsUltimoRegistro)
+                {
+                    var mensaje = $"Finalización - Ejecución Proceso Registro Prospecto Redes Sociales Masivo";
+                    var log = new LogFondos()
+                    {
+                        Fecha = DateTime.Now,
+                        Mensaje = mensaje,
+                        Tipo = "Polen",
+                        Valor = JsonSerializer.Serialize(request.NumeroRegistro)
+                    };
+                    await _unitOfWork.Repository<LogFondos>().AddAsync(log);
+                }
                 var tipoNegociacion =
                     EnumDictionaryProvider.TipoNegociacionEnumDict[TipoNegociacionEnum.VENTA_DIGITAL_B2C];
 
-                var enumCampignOrigin = getOriginCapaña(request.Plataforma!, request.Anuncio!).ToString();
-                var zonaId = getIdZonaByAnuncio(request.Anuncio);
+                var (enumCampignOrigin, zonaId) = getOriginAndIdZonaByCapaña(request.Plataforma!, request.Anuncio!);
                 if (zonaId==3)
                 {
                     zonaId = 2;
@@ -57,16 +93,17 @@
 
                 if (existeMaestroProspecto == null)
                 {
-
-                    idContactBitrix24 = await _bitrix24ApiService.RegistrarContactoBitrix24(
-                        request.Nombre,
-                        request.Apellido,
-                        request.Telefono,
-                        request.Email,
-                        enumCampignOrigin,
-                        vendedorAsignado.BitrixID
-                        );
-
+                    if (request.VaBitrix)
+                    {
+                        idContactBitrix24 = await _bitrix24ApiService.RegistrarContactoBitrix24(
+                            request.Nombre,
+                            request.Apellido,
+                            request.Telefono,
+                            request.Email,
+                            enumCampignOrigin.ToString(),
+                            vendedorAsignado.BitrixID
+                            );
+                    }
 
                     idMaestroProspecto = await _maestroProspectoRepository.EstablerDatosMinimoYRegistrarMaestroProspecto(_mapper.Map<MaestroProspecto>(request), idContactBitrix24);
                     seDebeIngresarProspecto = true;
@@ -81,26 +118,36 @@
 
                 if (seDebeIngresarProspecto)
                 {
-                    var idDealBitrix24 = await _bitrix24ApiService.RegistrarDealBitrix24(
-                                                            tipoNegociacion,
-                                                            request.Anuncio,
-                                                            idContactBitrix24,
-                                                            enumCampignOrigin,
-                                                            vendedorAsignado.BitrixID,
-                                                            null,
-                                                            null,
-                                                            null,
-                                                            nombreDirector,
-                                                            nombreGerenteZona
-                                                        );
-                    idProspecto = await _prospectoRepository.EstablecerDatosMinimosYRegistrarProspecto(_mapper.Map<Prospectos>(request), idMaestroProspecto, idDealBitrix24, vendedorAsignado, vendedorAsignado.ZonId, "OV12");
+                    var idDealBitrix24 = "";
+                    if (request.VaBitrix)
+                    {
+                        idDealBitrix24 = await _bitrix24ApiService.RegistrarDealBitrix24(
+                                                           tipoNegociacion,
+                                                           request.Anuncio,
+                                                           idContactBitrix24,
+                                                           enumCampignOrigin.ToString(),
+                                                           vendedorAsignado.BitrixID,
+                                                           null,
+                                                           null,
+                                                           null,
+                                                           nombreDirector,
+                                                           nombreGerenteZona
+                                                       );
+                    }
+                       
+                    idProspecto = await _prospectoRepository.EstablecerDatosMinimosYRegistrarProspecto(_mapper.Map<Prospectos>(request), idMaestroProspecto, idDealBitrix24, vendedorAsignado, vendedorAsignado.ZonId, "OV12", enumCampignOrigin.ToString());
                 }
                 else
                 {
                     var prospecto = await _prospectoRepository.ObtenerUltimoProspectoPorIdMaestroProspecto(existeMaestroProspecto.MaeId);
                     if (prospecto != null)
                     {
-                        await _bitrix24ApiService.ValidarExistenciaDealEnBitrix(prospecto.ProId);
+                        if (request.VaBitrix)
+                        {
+                            await _bitrix24ApiService.ValidarExistenciaDealEnBitrix(prospecto.ProId);
+
+                        }
+
                     }
                     if (request.EsMasivo)
                     {
@@ -126,7 +173,11 @@
 
                 if (request.EsMasivo)
                 {
-                    await Task.Delay(TimeSpan.FromSeconds(120));
+                    if (request.VaBitrix)
+                    {
+                        await Task.Delay(TimeSpan.FromSeconds(120));
+                    }
+                    
                     return 0;
                 }
                 else
@@ -138,35 +189,167 @@
         }
        
 
-        private int getOriginCapaña(string plataforma,string anuncio)
+        private (int,int) getOriginAndIdZonaByCapaña(string plataforma,string anuncio)
         {
             switch (anuncio)
             {
                 case var _ when anuncio == CampaignOriginEnum.FORMULARIO_HOME_WEB.GetDescription():
-                    return (int)CampaignOriginEnum.FORMULARIO_HOME_WEB;
+                    return ((int)CampaignOriginEnum.FORMULARIO_HOME_WEB,0);
                 default:
                     break;
             }
 
-            char delimiter = '_';
-            string[] anuncioSplit = anuncio.Split(delimiter);
-            var ciudad = anuncioSplit[0].Trim().ToUpper();
-            var producto = anuncioSplit[1].Trim().ToUpper();
+            var ciudad = "";
+            var palabrasBuscadaMedellin = new List<string> { "MEDELLIN", "ANTIOQUIA", "Medellín" };
+            if (EvaluarOracion(anuncio, palabrasBuscadaMedellin))
+            {
+                ciudad = "MEDELLIN";
+            }
+            var palabrasBuscadaBogota = new List<string> { "BOGOTA", "Bogotá" };
+            if (EvaluarOracion(anuncio, palabrasBuscadaBogota))
+            {
+                ciudad = "BOGOTA";
+            }
+
+            var palabrasBuscadaBarranquilla = new List<string> { "BARRANQUILLA", "Barranquilla" };
+            
+            if (EvaluarOracion(anuncio, palabrasBuscadaBarranquilla))
+            {
+                ciudad = "BARRANQUILLA";
+            }
+
+
+            var zonaId = (int)EnumDictionaryProvider.ZonaEnumDict.FirstOrDefault(pair => pair.Value == ciudad).Key;
+
+            var anuncioBitrixId = getCampaingBitrixIdFromAdName(plataforma, anuncio);
+            if (anuncioBitrixId!=0)
+            {
+                return (anuncioBitrixId, zonaId);
+            }
+
+            var producto = "";
+            var palabrasBuscadaAutoNuevo = new List<string> { "AUTO", "NUEVO" };
+            if (EvaluarOracion(anuncio, palabrasBuscadaAutoNuevo))
+            {
+                producto = "AUTO";
+            }
+            var palabrasBuscadaAutoUsado = new List<string> { "SEMINUEVOS", "USADO" };
+            if (EvaluarOracion(anuncio, palabrasBuscadaAutoUsado))
+            {
+                producto = "SEMINUEVO";
+            }
 
             var campaignString = $"{ciudad}_{producto}_{plataforma}";
-            return (int)EnumDictionaryProvider.CampaignOriginEnumDict.FirstOrDefault(pair => pair.Value == campaignString).Key;
+            return ((int)EnumDictionaryProvider.CampaignOriginEnumDict.FirstOrDefault(pair => pair.Value == campaignString).Key,
+                 zonaId
+                );
 
         }
-        private int getIdZonaByAnuncio(string anuncio)
+        private int getCampaingBitrixIdFromAdName(string plataforma, string anuncio)
         {
-            char delimiter = '_';
-            string[] anuncioSplit = anuncio.Split(delimiter);
-            var ciudad = anuncioSplit[0].Trim().ToUpper();
-            return  (int)EnumDictionaryProvider.ZonaEnumDict.FirstOrDefault(pair => pair.Value == ciudad).Key;
+            if (string.IsNullOrWhiteSpace(plataforma) || string.IsNullOrWhiteSpace(anuncio))
+            {
+                return 0; 
+            }
+            var campaignIdMap = MethodHelper.InitializeCampaignIdMap(plataforma); 
 
+            if (campaignIdMap.TryGetValue(anuncio.ToUpper().Trim(), out int campaignBitrixId))
+            {
+                return campaignBitrixId;
+            }
+
+            return 0;
         }
-        
 
+        //private int getCampaingBitrixIdFromAdName(string plataforma, string anuncio)
+        //{
+        //    var campaignBitrixId = 0;
+
+        //    if (plataforma.ToUpper().Trim()== PlataformaEnum.META.GetDescription())
+        //    {
+        //        switch (anuncio)
+        //        {
+        //            case var _ when anuncio == CampaignOriginEnumMETA.BARRANQUILLA_CARRO_NUEVO_TEMATICA.GetDescription():
+        //                campaignBitrixId=(int)CampaignOriginEnumMETA.BARRANQUILLA_CARRO_NUEVO_TEMATICA;
+        //                break;
+        //            case var _ when anuncio == CampaignOriginEnumMETA.BARRANQUILLA_CARRO_USADO_TEMATICA.GetDescription():
+        //                campaignBitrixId = (int)CampaignOriginEnumMETA.BARRANQUILLA_CARRO_USADO_TEMATICA;
+        //                break;
+        //            case var _ when anuncio == CampaignOriginEnumMETA.BARRANQUILLA_CARRO_NUEVO_COMERCIAL.GetDescription():
+        //                campaignBitrixId = (int)CampaignOriginEnumMETA.BARRANQUILLA_CARRO_NUEVO_COMERCIAL;
+        //                break;
+        //            case var _ when anuncio == CampaignOriginEnumMETA.BARRANQUILLA_CARRO_USADO_COMERCIAL.GetDescription():
+        //                campaignBitrixId = (int)CampaignOriginEnumMETA.BARRANQUILLA_CARRO_USADO_COMERCIAL;
+        //                break;
+        //            case var _ when anuncio == CampaignOriginEnumMETA.BARRANQUILLA_CARRO_REEL.GetDescription():
+        //                campaignBitrixId = (int)CampaignOriginEnumMETA.BARRANQUILLA_CARRO_REEL;
+        //                break;
+        //            case var _ when anuncio == CampaignOriginEnumMETA.BOGOTA_CARRO_NUEVO_TEMATICA.GetDescription():
+        //                campaignBitrixId = (int)CampaignOriginEnumMETA.BOGOTA_CARRO_NUEVO_TEMATICA;
+        //                break;
+        //            case var _ when anuncio == CampaignOriginEnumMETA.BOGOTA_CARRO_USADO_TEMATICA.GetDescription():
+        //                campaignBitrixId = (int)CampaignOriginEnumMETA.BOGOTA_CARRO_USADO_TEMATICA;
+        //                break;
+        //            case var _ when anuncio == CampaignOriginEnumMETA.BOGOTA_CARRO_NUEVO_COMERCIAL.GetDescription():
+        //                campaignBitrixId = (int)CampaignOriginEnumMETA.BOGOTA_CARRO_NUEVO_COMERCIAL;
+        //                break;
+        //            case var _ when anuncio == CampaignOriginEnumMETA.BOGOTA_CARRO_USADO_COMERCIAL.GetDescription():
+        //                campaignBitrixId = (int)CampaignOriginEnumMETA.BOGOTA_CARRO_USADO_COMERCIAL;
+        //                break;
+        //            case var _ when anuncio == CampaignOriginEnumMETA.BOGOTA_CARRO_REEL.GetDescription():
+        //                campaignBitrixId = (int)CampaignOriginEnumMETA.BOGOTA_CARRO_REEL;
+        //                break;
+        //            case var _ when anuncio == CampaignOriginEnumMETA.MEDELLIN_CARRO_NUEVO_TEMATICA.GetDescription():
+        //                campaignBitrixId = (int)CampaignOriginEnumMETA.MEDELLIN_CARRO_NUEVO_TEMATICA;
+        //                break;
+        //            case var _ when anuncio == CampaignOriginEnumMETA.MEDELLIN_CARRO_USADO_TEMATICA.GetDescription():
+        //                campaignBitrixId = (int)CampaignOriginEnumMETA.MEDELLIN_CARRO_USADO_TEMATICA;
+        //                break;
+        //            case var _ when anuncio == CampaignOriginEnumMETA.MEDELLIN_CARRO_NUEVO_COMERCIAL.GetDescription():
+        //                campaignBitrixId = (int)CampaignOriginEnumMETA.MEDELLIN_CARRO_NUEVO_COMERCIAL;
+        //                break;
+        //            case var _ when anuncio == CampaignOriginEnumMETA.MEDELLIN_CARRO_USADO_COMERCIAL.GetDescription():
+        //                campaignBitrixId = (int)CampaignOriginEnumMETA.MEDELLIN_CARRO_USADO_COMERCIAL;
+        //                break;
+        //            case var _ when anuncio == CampaignOriginEnumMETA.MEDELLIN_CARRO_REEL.GetDescription():
+        //                campaignBitrixId = (int)CampaignOriginEnumMETA.MEDELLIN_CARRO_REEL;
+        //                break;
+        //            default:
+        //                break;
+        //        }
+        //    }
+        //    if (plataforma.ToUpper().Trim() == PlataformaEnum.TIKTOK.GetDescription())
+        //    {
+        //        switch (anuncio)
+        //        {
+        //            case var _ when anuncio == CampaignOriginEnumTIKTOK.BARRANQUILLA_CARRO_REEL.GetDescription():
+        //                campaignBitrixId = (int)CampaignOriginEnumTIKTOK.BARRANQUILLA_CARRO_REEL;
+        //                break;
+        //            case var _ when anuncio == CampaignOriginEnumTIKTOK.BOGOTA_CARRO_REEL.GetDescription():
+        //                campaignBitrixId = (int)CampaignOriginEnumTIKTOK.BOGOTA_CARRO_REEL;
+        //                break;
+        //            case var _ when anuncio == CampaignOriginEnumTIKTOK.MEDELLIN_CARRO_REEL.GetDescription():
+        //                campaignBitrixId = (int)CampaignOriginEnumTIKTOK.MEDELLIN_CARRO_REEL;
+        //                break;
+        //            default:
+        //                break;
+        //        }
+
+        //    }
+        //    return campaignBitrixId;
+        //}
+
+        private bool EvaluarOracion(string oracion, List<string> palabrasVascas)
+        {
+            foreach (var palabra in palabrasVascas)
+            {
+                if (oracion.ToUpper().Contains(palabra.ToUpper()))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
 
     }
 

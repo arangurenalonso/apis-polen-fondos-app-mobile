@@ -1,5 +1,8 @@
 ﻿namespace Application.Helper
 {
+    using DocumentFormat.OpenXml.Bibliography;
+    using Domain.Enum;
+    using Domain.Enum.Dictionario;
     using Newtonsoft.Json;
     using System.Reflection;
     public class MethodHelper
@@ -75,5 +78,42 @@
             string json = JsonConvert.SerializeObject(original, settings);
             return JsonConvert.DeserializeObject<T>(json);
         }
+
+        public static Dictionary<string, int> InitializeCampaignIdMap(string plataforma)
+        {
+            var campaignIdMap = new Dictionary<string, int>();
+            if (plataforma.ToUpper().Trim() == PlataformaEnum.META.GetDescription())
+            {
+                AddEnumValuesToMap(typeof(CampaignOriginEnumMETA), campaignIdMap);
+            }
+            if (plataforma.ToUpper().Trim() == PlataformaEnum.TIKTOK.GetDescription())
+            {
+                AddEnumValuesToMap(typeof(CampaignOriginEnumTIKTOK), campaignIdMap);
+            }
+            return campaignIdMap;
+        }
+        private static void AddEnumValuesToMap(Type enumType, Dictionary<string, int> campaignIdMap)
+        {
+            foreach (var value in Enum.GetValues(enumType))
+            {
+                var enumValue = (Enum)value;
+                try
+                {
+                    var key = enumValue.GetDescription();
+                    if (string.IsNullOrEmpty(key))
+                    {
+                        //Si no tiene descripcion
+                        continue;
+                    }
+
+                    campaignIdMap.Add(key, (int)value);
+                }
+                catch (ArgumentException ex)
+                {
+                    // La exepción se genera cuando por clave duplicada o registrarla
+                }
+            }
+        }
+
     }
 }

@@ -12,7 +12,7 @@
         public string VenCod { get; set; }
 
         [Column("ven_numdoc", TypeName = "varchar")]
-        public string? VenNumDoc { get; set; }
+        public string? VenNumDoc { get; set; } 
 
         [Column("ven_nom", TypeName = "varchar")]
         public string? VenNom { get; set; }
@@ -85,5 +85,7 @@
         [Column("BitrixID", TypeName = "LONGTEXT")]
         [JsonPropertyName("BitrixID")]
         public string? BitrixID { get; set; }
+
+
     }
 }

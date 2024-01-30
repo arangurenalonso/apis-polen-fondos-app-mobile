@@ -30,7 +30,9 @@
         public DbSet<ComisionesParaLiquidacion> ComisionesParaLiquidacion { get; set; }
         public DbSet<DiscardReasonsEntity> DiscardReasonsEntity { get; set; }
         public DbSet<StatesContactosEntity> StatesContactosEntity { get; set; }
-
+        public DbSet<StateEntity> StateEntity { get; set; }
+        public DbSet<PuntoDeVenta> PuntoDeVenta { get; set; }
+        
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

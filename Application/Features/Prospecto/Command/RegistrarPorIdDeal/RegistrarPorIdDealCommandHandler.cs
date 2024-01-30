@@ -1,18 +1,17 @@
-﻿using Application.Contracts.Repositories.Base;
-using AutoMapper;
-using Domain.Entities;
-using MediatR;
-using Application.Contracts.ApiExterna;
-using Application.Contracts.Repositories;
-using Application.Models.ConsumoApi.Bitrix24.Entities;
-using Application.Models.ConsumoApi.Bitrix24.Models;
-using System.Text.Json;
-using Application.Exception;
-using Domain.Enum.Dictionario;
-using Domain.Enum;
-
-namespace Application.Features.Prospecto.Command.RegistrarPorIdDeal
+﻿namespace Application.Features.Prospecto.Command.RegistrarPorIdDeal
 {
+    using Application.Contracts.Repositories.Base;
+    using AutoMapper;
+    using Domain.Entities;
+    using MediatR;
+    using Application.Contracts.ApiExterna;
+    using Application.Contracts.Repositories;
+    using Application.Models.ConsumoApi.Bitrix24.Entities;
+    using Application.Models.ConsumoApi.Bitrix24.Models;
+    using System.Text.Json;
+    using Application.Exception;
+    using Domain.Enum.Dictionario;
+    using Domain.Enum;
     public class RegistrarPorIdDealCommandHandler : IRequestHandler<RegistrarPorIdDealCommand, int>
     {
         private readonly IUnitOfWork _unitOfWork;
@@ -78,7 +77,7 @@ namespace Application.Features.Prospecto.Command.RegistrarPorIdDeal
 
                     var prospectoToCreate = _mapper.Map<Prospectos>(deal);
                     prospectoToCreate.MedId = 10;
-                    idProspecto = await _prospectoRepository.EstablecerDatosMinimosYRegistrarProspecto(prospectoToCreate, idMaestroProspecto, deal.ID.ToString(), vendedorAsignado, vendedorAsignado.ZonId, origenVenta.Corivta);
+                    idProspecto = await _prospectoRepository.EstablecerDatosMinimosYRegistrarProspecto(prospectoToCreate, idMaestroProspecto, deal.ID.ToString(), vendedorAsignado, vendedorAsignado.ZonId, origenVenta.Corivta, deal.SOURCE_ID);
                     await _bitrix24ApiService.ActualizarDealBitrix24(
                         deal,
                         tipoNegociacion,
@@ -116,15 +115,15 @@ namespace Application.Features.Prospecto.Command.RegistrarPorIdDeal
                     Valor = JsonSerializer.Serialize(request)
                 };
                 await _unitOfWork.Repository<LogFondos>().AddAsync(log);
-                if (e.Message != "Lead Repetido")
-                {
-                    await Task.Delay(TimeSpan.FromSeconds(60));
-                }
-                else
-                {
-                    await Task.Delay(TimeSpan.FromSeconds(20));
+                //if (e.Message != "Lead Repetido")
+                //{
+                //    await Task.Delay(TimeSpan.FromSeconds(60));
+                //}
+                //else
+                //{
+                //    await Task.Delay(TimeSpan.FromSeconds(20));
 
-                }
+                //}
                 return 0;
             }
 

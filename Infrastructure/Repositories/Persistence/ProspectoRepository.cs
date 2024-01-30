@@ -178,6 +178,17 @@
             }
             return origenVenta;
         }
+        public async Task<PuntoDeVenta> ObtenerPuntoVentaProspecto(string? cptovta)
+        {
+            var puntoDeVenta = await _context.PuntoDeVenta
+                                            .Where(x => x.PvtaCod == cptovta)
+                                            .FirstOrDefaultAsync();
+            if (puntoDeVenta == null)
+            {
+                throw new NotFoundException($"No se encuentra el punto de venta con cptovta: '{cptovta}' ");
+            }
+            return puntoDeVenta;
+        }
         public async Task<Prospectos?> ObtenerUltimoProspectoPorIdMaestroProspecto(int idMaestroProspecto)
         {
             var prospecto = await _context.Prospectos
@@ -202,7 +213,7 @@
             return (diasDiferencia >= 30, prospecto);
         }
         public async Task<int> EstablecerDatosMinimosYRegistrarProspecto(Prospectos prospecto, 
-            int idMaestroProspecto, string idDealBitrix24, Vendedores vendedor, int zonaId,string idOrigen)
+            int idMaestroProspecto, string idDealBitrix24, Vendedores vendedor, int zonaId,string idOrigen, string? enumCampignOrigin)
         {
             var fechaActual=DateTime.Now; 
             prospecto.BitrixID = idDealBitrix24;
@@ -222,8 +233,8 @@
             prospecto.VenSupcod = vendedor.VenSupCod;
             prospecto.VenGescod = vendedor.VenGesCod;
             prospecto.VenGercod = vendedor.VenGerCod;
-
-            if (idOrigen== "OV02")
+            prospecto.ProCart = enumCampignOrigin;
+            if (idOrigen== "OV02") 
             {
                 prospecto.IntId = true;
             }

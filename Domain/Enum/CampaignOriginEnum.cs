@@ -29,5 +29,17 @@ namespace Domain.Enum
         [Description("FORMULARIO_HOME_WEB")]
         FORMULARIO_HOME_WEB =4,
 
+        [Description("Meta_BARRANQUILLA_AutoNuevos")]
+        Meta_BARRANQUILLA_AutoNuevos = 78,
+        [Description("Meta_BARRANQUILLA_AutoUsados")]
+        Meta_BARRANQUILLA_AutoUsados = 79,
+        [Description("TikTok_BARRANQUILLA_AutoNuevos")]
+        TikTok_BARRANQUILLA_AutoNuevos = 80,
+        [Description("TikTok_BARRANQUILLA_AutoUsados")]
+        TikTok_BARRANQUILLA_AutoUsados = 81,
+
+
+
+
     }
 }

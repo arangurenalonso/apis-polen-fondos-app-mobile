@@ -53,5 +53,8 @@
            string? origenBitrix = null,
            string? nombreDirector = null,
            string? nombreGerenteZona = null);
+        Task<bool> CRMDealDelete(int? id);
+
+        Task<List<ContactBitrix24>> CRMContactList(string? start = null, List<ContactBitrix24>? aggregatedContacts = null);
     }
 }

@@ -3,6 +3,7 @@
     using Application.Contracts.Repositories;
     using Application.Exception;
     using Application.Helper;
+    using DocumentFormat.OpenXml.Bibliography;
     using Domain.Entities;
     using Infrastructure.Persistence;
     using Infrastructure.Repositories.Persistence.Common;
@@ -27,6 +28,26 @@
             }
             return vendedor;
         }
+        public async Task<List<Vendedores>> ObtenerVendedoresPorJerarquiaComercial(
+            string cargo,
+            string? codGerente = null,
+            string? codGestor = null,
+            string? codSupervisor = null,
+            string ? codVendedor=null
+            )
+        {
+            var vendedores = await _context.Vendedores
+                                          .Where(x => 
+                                                x.VenCarCod== cargo &&
+                                                (codGerente == null || x.VenGerCod == codGerente) &&
+                                                 (codGestor == null || x.VenGesCod == codGestor) &&
+                                                 (codSupervisor == null || x.VenSupCod == codSupervisor) &&
+                                                 x.VenFcese == null
+                                          )
+                                          .ToListAsync();
+            return vendedores;
+        }
+
         public async Task<(string nombreDirector,string nombreGerenteZona)> ObtenerJerarQuiaComercial(Vendedores vendedor)
         {
             var JerarquiaComercial = await GetAsync(x =>

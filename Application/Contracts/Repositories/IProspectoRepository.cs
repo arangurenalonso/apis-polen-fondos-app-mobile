@@ -4,14 +4,15 @@
     using Application.Mappings.Prospecto.DTO;
     using Domain.Entities;
     public interface IProspectoRepository: IRepositoryBase<Prospectos>
-    {
+    { 
         Task<Prospectos> ObtenerProspectoPorId(int idProspecto);
         Task<SPGetDatosProspectoVendResponse> ObtenerDatosProspectoPorVendedor(string CodigoVendedor, string nroDocumento);
         Task<SpGetListaDatosFojaResult> ObtenerDatosFoja(int proid); 
         Task<int> EstablecerDatosMinimosYRegistrarProspecto(Prospectos prospecto,
-            int idMaestroProspecto, string idDealBitrix24, Vendedores vendedor, int zonaId, string idOrigen);
+            int idMaestroProspecto, string idDealBitrix24, Vendedores vendedor, int zonaId, string idOrigen, string? enumCampignOrigin);
         Task<(bool, Prospectos? prospecto)> VerificarIngresoProspecto(int idMaestroProspecto);
         Task<Prospectos?> ObtenerUltimoProspectoPorIdMaestroProspecto(int idMaestroProspecto);
         Task<OrigenVentas> ObtenerOrigenVentaProspecto(string? corivta);
+        Task<PuntoDeVenta> ObtenerPuntoVentaProspecto(string? cptovta);
     }
 }

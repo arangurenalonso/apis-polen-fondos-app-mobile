@@ -1,0 +1,51 @@
+﻿namespace Domain.Enum
+{
+    using System.ComponentModel;
+    public enum CampaignOriginEnumMETA
+    {
+        [Description("BARRANQUILLA_CARRO_NUEVO_TEMATICA")]
+        BARRANQUILLA_CARRO_NUEVO_TEMATICA = 85,
+
+        [Description("BARRANQUILLA_CARRO_USADO_TEMATICA")]
+        BARRANQUILLA_CARRO_USADO_TEMATICA = 86,
+
+        [Description("BARRANQUILLA_CARRO_NUEVO_COMERCIAL")]
+        BARRANQUILLA_CARRO_NUEVO_COMERCIAL = 87,
+
+        [Description("BARRANQUILLA_CARRO_USADO_COMERCIAL")]
+        BARRANQUILLA_CARRO_USADO_COMERCIAL = 88,
+
+        [Description("BARRANQUILLA_CARRO_REEL")]
+        BARRANQUILLA_CARRO_REEL = 89,
+
+        [Description("BOGOTA_CARRO_NUEVO_TEMATICA")]
+        BOGOTA_CARRO_NUEVO_TEMATICA = 90,
+
+        [Description("BOGOTA_CARRO_USADO_TEMATICA")]
+        BOGOTA_CARRO_USADO_TEMATICA = 91,
+
+        [Description("BOGOTA_CARRO_NUEVO_COMERCIAL")]
+        BOGOTA_CARRO_NUEVO_COMERCIAL = 92,
+
+        [Description("BOGOTA_CARRO_USADO_COMERCIAL")]
+        BOGOTA_CARRO_USADO_COMERCIAL = 93,
+
+        [Description("BOGOTA_CARRO_REEL")]
+        BOGOTA_CARRO_REEL = 94,
+
+        [Description("MEDELLIN_CARRO_NUEVO_TEMATICA")]
+        MEDELLIN_CARRO_NUEVO_TEMATICA = 95,
+
+        [Description("MEDELLIN_CARRO_USADO_TEMATICA")]
+        MEDELLIN_CARRO_USADO_TEMATICA = 96,
+
+        [Description("MEDELLIN_CARRO_NUEVO_COMERCIAL")]
+        MEDELLIN_CARRO_NUEVO_COMERCIAL = 97,
+
+        [Description("MEDELLIN_CARRO_USADO_COMERCIAL")]
+        MEDELLIN_CARRO_USADO_COMERCIAL = 98,
+
+        [Description("MEDELLIN_CARRO_REEL")]
+        MEDELLIN_CARRO_REEL = 99,
+    }
+}

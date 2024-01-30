@@ -35,6 +35,10 @@
 
             services.AddScoped<IClienteProvider, ClienteProvider>();
             services.AddScoped<IBitrix24ApiService, Bitrix24ApiService>();
+            services.AddScoped<IStateRepository, StateRepository>();
+            services.AddScoped<IMediosRepository, MediosRepository>();
+            
+
 
             return services;
         }

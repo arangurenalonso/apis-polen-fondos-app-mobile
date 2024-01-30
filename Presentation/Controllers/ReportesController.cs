@@ -13,6 +13,8 @@
     public class ReportesController : BaseApiController
     {
         public ReportesController(IMediator mediator) : base(mediator) { }
+
+
         [HttpGet("Reporte1")]
         [ProducesResponseType(typeof(List<Reporte1DTOResponse>), (int)HttpStatusCode.OK)]
         public async Task<ActionResult<ResponseResult<List<Reporte1DTOResponse>>>> ObtenerReporte1([FromQuery]ObtenerReporte1Query query)

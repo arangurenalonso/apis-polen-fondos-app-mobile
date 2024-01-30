@@ -21,7 +21,7 @@
 
         public static Dictionary<CampaignOriginEnum, string> CampaignOriginEnumDict = new Dictionary<CampaignOriginEnum, string>()
         {
-            { CampaignOriginEnum.Meta_Bogota_AutoNuevos, "BOGOTA_AUTO_META" }, 
+            { CampaignOriginEnum.Meta_Bogota_AutoNuevos, "BOGOTA_AUTO_META" },  
             { CampaignOriginEnum.TikTok_Bogota_AutoNuevos, "BOGOTA_AUTO_TIKTOK" },
             { CampaignOriginEnum.Meta_Bogota_AutoUsados, "BOGOTA_SEMINUEVO_META" },
             { CampaignOriginEnum.TikTok_Bogota_AutoUsados, "BOGOTA_SEMINUEVO_TIKTOK" },
@@ -35,13 +35,26 @@
             { CampaignOriginEnum.TikTok_Medellin_AutoUsados, "MEDELLIN_SEMINUEVO_TIKTOK" },
 
             { CampaignOriginEnum.Meta_Antioquia_AutoNuevos, "ANTIOQUIA_AUTO_META" },
-            { CampaignOriginEnum.Meta_Antioquia_AutoUsados, "ANTIOQUIA_SEMINUEVO_META" }
+            { CampaignOriginEnum.Meta_Antioquia_AutoUsados, "ANTIOQUIA_SEMINUEVO_META" },
+
+
+            { CampaignOriginEnum.Meta_BARRANQUILLA_AutoNuevos, "BARRANQUILLA_AUTO_META" },
+            { CampaignOriginEnum.Meta_BARRANQUILLA_AutoUsados, "BARRANQUILLA_SEMINUEVO_META" },
+
+
+            { CampaignOriginEnum.TikTok_BARRANQUILLA_AutoNuevos, "BARRANQUILLA_AUTO_TIKTOK" },
+            { CampaignOriginEnum.TikTok_BARRANQUILLA_AutoUsados, "BARRANQUILLA_SEMINUEVO_TIKTOK" }
+
+
+
+
         };
         public static Dictionary<ZonaEnum, string> ZonaEnumDict = new Dictionary<ZonaEnum, string>()
         {
             { ZonaEnum.Bogota, "BOGOTA" },
             { ZonaEnum.Medellin, "MEDELLIN" },
             { ZonaEnum.Antioquia, "ANTIOQUIA" },
+            { ZonaEnum.Barranquilla, "BARRANQUILLA" },
         };
         public static Dictionary<TipoNegociacionEnum, string> TipoNegociacionEnumDict = new Dictionary<TipoNegociacionEnum, string>()
         {

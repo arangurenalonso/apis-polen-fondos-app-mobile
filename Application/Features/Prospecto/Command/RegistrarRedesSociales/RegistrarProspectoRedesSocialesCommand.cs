@@ -8,6 +8,9 @@
         string? Apellido,
         string Telefono,
         string? Email,
-        bool EsMasivo
+        bool EsMasivo,
+        bool EsUltimoRegistro,
+        int NumeroRegistro,
+        bool VaBitrix=true
         ) : IRequest<int>;
 }

@@ -8,12 +8,14 @@
     using Application.Models.ConsumoApi.Bitrix24.Entities;
     using Application.Models.ConsumoApi.Bitrix24.Models;
     using Application.Models.ConsumoApi.Models;
+    using Azure.Core;
     using Domain.Entities;
     using Domain.Enum;
     using Domain.Enum.Dictionario;
     using Infrastructure.Options.ApiExternas;
     using Irony.Parsing;
     using Microsoft.Extensions.Options;
+    using Newtonsoft.Json;
 
     public class Bitrix24ApiService : IBitrix24ApiService
     {
@@ -102,8 +104,22 @@
             }
             return response.Result.Result;
         }
+        public async Task<bool> CRMDealDelete(int? id)
+        {
+            var path = $"{_initialPath}/crm.deal.delete";
+            var request = new { ID = id };
+            ResponseModel<ApiResponseBitrix<bool>> response =
+                await _clienteProvider.PostAsyncJson<ApiResponseBitrix<bool>>(_url, path, request);
+            if (!response.IsSuccess)
+            {
+                throw new ConsumoApisInternasException($"{_url}{path}", response.Errores);
+            }
+            return response.Result.Result;
+        }
         public async Task<int> CRMDealAdd(ApiRequestBitrixCreate<DealBitrix24> request)
         {
+            string jsonString = JsonConvert.SerializeObject(request);
+
             var path = $"{_initialPath}/crm.deal.add";
 
             ResponseModel<ApiResponseBitrix<int>> response =
@@ -149,6 +165,41 @@
             }
             return response.Result.Result;
         }
+        public async Task<List<ContactBitrix24>> CRMContactList(string? start = null, List<ContactBitrix24>? aggregatedContacts = null)
+        {
+            var path = $"{_initialPath}/crm.contact.list";
+
+            // Initialize the list if it's the first call
+            if (aggregatedContacts == null)
+            { 
+                aggregatedContacts = new List<ContactBitrix24>();
+            }
+
+            var requestData = new
+            {
+                start = start,
+                select = new[] { "ID", "SOURCE_ID" }
+            };
+
+            ResponseModel<ApiResponseBitrix<List<ContactBitrix24>>> response =
+                await _clienteProvider.PostAsyncJson<ApiResponseBitrix<List<ContactBitrix24>>>(_url, path, requestData);
+
+            if (response.IsSuccess)
+            {
+                var contactosResult = response.Result.Result;
+
+                // Add the results to the aggregated list
+                aggregatedContacts.AddRange(contactosResult);
+
+                // Check for more pages and recursively call the method
+                if (response.Result.Next != null)
+                {
+                    await CRMContactList(response.Result.Next, aggregatedContacts);
+                }
+            }
+
+            return aggregatedContacts;
+        }
         public async Task<List<DealBitrix24>> CRMDealList(Dictionary<string, object> filter)
         {
             var path = $"{_initialPath}/crm.deal.list";
@@ -169,6 +220,7 @@
         { 
             var prospecto=await _prospectoRepository.ObtenerProspectoPorId(prospectoId);
 
+            var origenBitrixObtenido = await ObtenerOrigenBitrix(prospecto);
             var tipoNegociacion = prospecto.Origin == "APP"
                     ? EnumDictionaryProvider.TipoNegociacionEnumDict[TipoNegociacionEnum.VENTA_PRESENCIAL_B2C]
                     : EnumDictionaryProvider.TipoNegociacionEnumDict[TipoNegociacionEnum.VENTA_DIGITAL_B2C];
@@ -179,6 +231,10 @@
             var (existeDealEnBitrix, dealBitrixExiste) = await ValdiarExistenciaDeDealEnBitrix(prospecto.BitrixID);
             if (existeDealEnBitrix)
             {
+                if (origenBitrixObtenido==null)
+                {
+                    origenBitrixObtenido = await ObtenerOrigenBitrix(prospecto, dealBitrixExiste.TITLE);
+                }
                 var (origenBitrix,nombreCampana) = await ObtenerOrigenFromApp(
                                         //prospecto.Corivta,
                                         //prospecto.ZonId, 
@@ -194,7 +250,7 @@
                                          prospecto.MotdesId,
                                          prospecto.EstId,
                                          prospecto.EstContactoId,
-                                         origenBitrix,
+                                         origenBitrixObtenido == null ? origenBitrix : origenBitrixObtenido,
                                          nombreDirector,
                                          nombreGerenteZona
                                     );
@@ -221,7 +277,7 @@
                                                                                                                                                          prospecto.MedId,
                                                                                                                                                          prospecto.ProCom),
                                                                 maestroProspecto.BitrixID,
-                                                                contactoBitrixExiste.SOURCE_ID,
+                                                                origenBitrixObtenido == null? contactoBitrixExiste.SOURCE_ID: origenBitrixObtenido,
                                                                 vendedorAsignado.BitrixID,
                                                                 prospecto.MotdesId,
                                                                 prospecto.EstId,
@@ -253,7 +309,7 @@
                                                                                                                                                          prospecto.MedId,
                                                                                                                                                          prospecto.ProCom),
                                                                     maestroProspecto.BitrixID,
-                                                                    contactoBitrixExiste.SOURCE_ID,
+                                                                    origenBitrixObtenido == null ? contactoBitrixExiste.SOURCE_ID : origenBitrixObtenido,
                                                                     vendedorAsignado.BitrixID,
                                                                     prospecto.MotdesId,
                                                                     prospecto.EstId,
@@ -279,13 +335,13 @@
                                                         dealBitrixToUpdate.SOURCE_ID
                                                         );
                                 await ActualizarDealBitrix24(
-                                                         dealBitrixToUpdate,
-                                                         tipoNegociacion,
-                                                         vendedorAsignado.BitrixID,
-                                                         prospecto.MotdesId,
-                                                         prospecto.EstId,
-                                                         prospecto.EstContactoId,
-                                                         origenBitrix,
+                                                                 dealBitrixToUpdate,
+                                                                 tipoNegociacion,
+                                                                 vendedorAsignado.BitrixID,
+                                                                 prospecto.MotdesId,
+                                                                 prospecto.EstId,
+                                                                 prospecto.EstContactoId,
+                                                                 origenBitrixObtenido == null ? origenBitrix : origenBitrixObtenido,
                                                                  nombreDirector,
                                                                  nombreGerenteZona
                                                     );
@@ -307,14 +363,12 @@
                 else
                 {
 
-                    var origenVentaProspecto = await _prospectoRepository.ObtenerOrigenVentaProspecto(prospecto.Corivta);
-                    var campanaOrigen = origenVentaProspecto.CoridatId;
                     var idContactBitrix24 = await RegistrarContactoBitrix24(
                        maestroProspecto.MaeNom,
                        maestroProspecto.MaePat,
                        maestroProspecto.MaeCel1,
                        maestroProspecto.MaeEmail,
-                       campanaOrigen,
+                       origenBitrixObtenido,
                        vendedorAsignado.BitrixID
                        );
                     maestroProspecto.BitrixID = idContactBitrix24;
@@ -327,7 +381,7 @@
                                                                                                                                                  prospecto.MedId,
                                                                                                                                                  prospecto.ProCom),
                                                             idContactBitrix24,
-                                                            campanaOrigen,
+                                                            origenBitrixObtenido,
                                                             vendedorAsignado.BitrixID,
                                                             prospecto.MotdesId,
                                                             prospecto.EstId,
@@ -342,6 +396,108 @@
                 }
                
             }
+        }
+        
+        public async Task<string?> ObtenerOrigenBitrix(Prospectos prospecto,string? tituloAnuncioBitrix=null)
+        {
+            if (prospecto.Corivta is null)
+            {
+                return null;
+            }
+            if (prospecto.Corivta.Trim()== "OV12")//Si es RedesSociales
+            {
+                if (tituloAnuncioBitrix is null)
+                {
+                    return null;
+                }
+                var ciudad = "";
+                if (prospecto.ZonId != null)
+                {
+                    switch (prospecto.ZonId)
+                    {
+                        case 1:
+                            ciudad = "BOGOTA";
+                            break;
+                        case 2:
+                            ciudad = "MEDELLIN";
+                            break;
+                        case 3:
+                            //ciudad = "ANTIOQUIA";
+                            ciudad = "MEDELLIN";
+                            break;
+                        case 4:
+                            ciudad = "BARRANQUILLA";
+                            break;
+                        default:
+                            break;
+                    }
+                }
+                var plataforma = "";
+                if (prospecto.MedId != null)
+                {
+                    switch (prospecto.MedId)
+                    {
+                        case 1:
+                            plataforma = "META";
+                            break;
+                        case 25:
+                            plataforma = "TIKTOK";
+                            break;
+                        default:
+                            break;
+                    }
+                }
+                var producto = "";
+
+                if (prospecto.ProCom != null)
+                {
+                    
+                    if (prospecto.ProCom.Contains("AUTO")|| prospecto.ProCom.Contains("NUEVO"))
+                    {
+                        producto = "AUTO";
+                    }
+                    if (prospecto.ProCom.Contains("SEMINUEVOS") || prospecto.ProCom.Contains("USADO"))
+                    {
+                        producto = "SEMINUEVO";
+                    }
+                }
+                if (string.IsNullOrWhiteSpace(producto))
+                {     
+                    if (tituloAnuncioBitrix.Contains("AUTO") || tituloAnuncioBitrix.Contains("NUEVO"))
+                    {
+                        producto = "AUTO";
+                    }
+                    if (tituloAnuncioBitrix.Contains("SEMINUEVOS") || tituloAnuncioBitrix.Contains("USADO"))
+                    {
+                        producto = "SEMINUEVO";
+                    }
+                }
+                if (!string.IsNullOrEmpty(ciudad) &&
+                    !string.IsNullOrEmpty(plataforma) &&
+                    !string.IsNullOrEmpty(producto))
+                {
+                    var campaignString = $"{ciudad}_{producto}_{plataforma}";
+                    var idCampana = (int)EnumDictionaryProvider.CampaignOriginEnumDict.FirstOrDefault(pair => pair.Value == campaignString).Key;
+                    return idCampana.ToString();
+                }
+                else
+                {
+                    return null;
+                }
+            }
+            if (prospecto.Corivta.Trim() == "OV01")//Si es PuntoDeVenta
+            {
+                if (prospecto.Cptovta is null)
+                {
+                    return null;
+                }
+                var puntoVentaProspecto = await _prospectoRepository.ObtenerPuntoVentaProspecto(prospecto.Cptovta);
+
+                return puntoVentaProspecto.PvtaEmail;//Donde se guarda el orgien de bitrix del punto de venta
+            }
+            var origenVentaProspecto = await _prospectoRepository.ObtenerOrigenVentaProspecto(prospecto.Corivta);
+
+            return origenVentaProspecto.CoridatId;//Donde se guarda el orgien de bitrix del origen de venta
         }
         public async Task<string> ActualizarDealBitrix24(
            DealBitrix24 dealBitrix24,
@@ -403,6 +559,9 @@
                             //ciudad = "ANTIOQUIA";
                             ciudad = "MEDELLIN";
                             break;
+                        case 4:
+                            ciudad = "Barranquilla";
+                            break;                            
                         default:
                             break;
                     }

@@ -4,6 +4,7 @@
     {
         Bogota=1,
         Medellin=2,
-        Antioquia = 3
+        Antioquia = 3,
+        Barranquilla = 4
     }
 }
