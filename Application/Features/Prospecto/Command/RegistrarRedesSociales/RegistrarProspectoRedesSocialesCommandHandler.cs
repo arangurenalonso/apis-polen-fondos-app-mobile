@@ -131,7 +131,9 @@
                                                            null,
                                                            null,
                                                            nombreDirector,
-                                                           nombreGerenteZona
+                                                           nombreGerenteZona,
+                                                           request.Anuncio
+
                                                        );
                     }
                        

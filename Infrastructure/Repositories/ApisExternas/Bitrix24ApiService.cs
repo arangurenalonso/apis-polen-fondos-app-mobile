@@ -215,7 +215,7 @@
                 throw new ConsumoApisInternasException($"{_url}{path}", response.Errores);
             }
             return response.Result.Result;
-        }
+        } 
         public async Task<DealBitrix24> ValidarExistenciaDealEnBitrix(int prospectoId)
         { 
             var prospecto=await _prospectoRepository.ObtenerProspectoPorId(prospectoId);
@@ -242,7 +242,7 @@
                                         //prospecto.ProCom,
                                         dealBitrixExiste.SOURCE_ID
                                         );
-
+                /*TODO*/
                 await ActualizarDealBitrix24(
                                          dealBitrixExiste,
                                          tipoNegociacion,
@@ -252,7 +252,8 @@
                                          prospecto.EstContactoId,
                                          origenBitrixObtenido == null ? origenBitrix : origenBitrixObtenido,
                                          nombreDirector,
-                                         nombreGerenteZona
+                                         nombreGerenteZona,
+                                         prospecto.ProCom??""
                                     );
                 return dealBitrixExiste;
             }
@@ -270,6 +271,7 @@
 
                     if (listaDeals.Count == 0)
                     {
+                        /*TODO*/
                         var idDealBitrix24 = await RegistrarDealBitrix24(
                                                                 tipoNegociacion,
                                                                 prospecto.Origin == "APP" ? "Generado Desde APP" : await ObtenerTitleDealFromCorivta(prospecto.Corivta,
@@ -283,7 +285,8 @@
                                                                 prospecto.EstId,
                                                                 prospecto.EstContactoId,
                                                                 nombreDirector,
-                                                                nombreGerenteZona
+                                                                nombreGerenteZona,
+                                                                prospecto.ProCom ?? ""
                                                             );
                         prospecto.BitrixID = idDealBitrix24;
                         await _unitOfWork.Repository<Prospectos>().UpdateAsync(prospecto);
@@ -302,6 +305,7 @@
                         var ultimoBitrixIdOrDefault = bitrixIdsQueNoEstanEnProspectosConMaeId.LastOrDefault();
                         if (ultimoBitrixIdOrDefault==null)
                         {
+                            /*TODO*/
                             var idDealBitrix24 = await RegistrarDealBitrix24(
                                                                     tipoNegociacion,
                                                                     prospecto.Origin == "APP" ? "Generado Desde APP" : await ObtenerTitleDealFromCorivta(prospecto.Corivta,
@@ -315,7 +319,8 @@
                                                                     prospecto.EstId,
                                                                     prospecto.EstContactoId,
                                                                     nombreDirector,
-                                                                    nombreGerenteZona
+                                                                    nombreGerenteZona,
+                                                                    prospecto.ProCom ?? ""
                                                                );
                             prospecto.BitrixID = idDealBitrix24;
                             await _unitOfWork.Repository<Prospectos>().UpdateAsync(prospecto);
@@ -334,6 +339,7 @@
                                                         //prospecto.ProCom,
                                                         dealBitrixToUpdate.SOURCE_ID
                                                         );
+                                /*TODO*/
                                 await ActualizarDealBitrix24(
                                                                  dealBitrixToUpdate,
                                                                  tipoNegociacion,
@@ -343,7 +349,8 @@
                                                                  prospecto.EstContactoId,
                                                                  origenBitrixObtenido == null ? origenBitrix : origenBitrixObtenido,
                                                                  nombreDirector,
-                                                                 nombreGerenteZona
+                                                                 nombreGerenteZona,
+                                                                 prospecto.ProCom ?? ""
                                                     );
                             }
 
@@ -373,7 +380,7 @@
                        );
                     maestroProspecto.BitrixID = idContactBitrix24;
                     await _unitOfWork.Repository<MaestroProspecto>().UpdateAsync(maestroProspecto);
-
+                    /*TODO*/
                     var idDealBitrix24 = await RegistrarDealBitrix24(
                                                             tipoNegociacion,
                                                             prospecto.Origin == "APP" ? "Generado Desde APP" : await ObtenerTitleDealFromCorivta(prospecto.Corivta,
@@ -387,7 +394,8 @@
                                                             prospecto.EstId,
                                                             prospecto.EstContactoId,
                                                             nombreDirector,
-                                                            nombreGerenteZona
+                                                            nombreGerenteZona,
+                                                            prospecto.ProCom ?? ""
                                                         );
                     prospecto.BitrixID = idDealBitrix24;
                     await _unitOfWork.Repository<Prospectos>().UpdateAsync(prospecto);
@@ -508,7 +516,9 @@
            int? estContactoId = null,
            string? origenBitrix = null,
            string? nombreDirector = null,
-           string? nombreGerenteZona = null)
+           string? nombreGerenteZona = null,
+           string ProspectoComentario = ""
+           )
         {
 
             dealBitrix24.ASSIGNED_BY_ID = idUsuarioBitrix;
@@ -529,6 +539,7 @@
             {
                 dealBitrix24.UF_CRM_1697215179 = nombreGerenteZona;
             }
+            dealBitrix24.UF_CRM_1707780281 = ProspectoComentario;
             var request = new UpdateBitrixModel<DealBitrix24>()
             {
                 id = dealBitrix24.ID.ToString(),
@@ -741,7 +752,8 @@
             int? estId=null,
             int? estContactoId=null,
             string? nombreDirector = null,
-            string? nombreGerenteZona = null)
+            string? nombreGerenteZona = null,
+            string Comentario="")
         {
             var obj = new DealBitrix24
             {
@@ -753,6 +765,7 @@
                 ASSIGNED_BY_ID=idUsuarioBitrix,
                 UF_CRM_1695762237 = "",
                 UF_CRM_1695762254 = "",
+                UF_CRM_1707780281 = Comentario
             };
 
             obj.TYPE_ID = tipoNegociacion;

@@ -30,7 +30,8 @@
             int? estId = null,
             int? estContactoId = null,
             string? nombreDirector = null,
-            string? nombreGerenteZona = null);
+            string? nombreGerenteZona = null,
+            string Comentario = "");
         Task<string> RegistrarContactoBitrix24(
             string nombre,
             string? apellido,
@@ -52,7 +53,8 @@
            int? estContactoId = null,
            string? origenBitrix = null,
            string? nombreDirector = null,
-           string? nombreGerenteZona = null);
+           string? nombreGerenteZona = null,
+           string ProspectoComentario = "");
         Task<bool> CRMDealDelete(int? id);
 
         Task<List<ContactBitrix24>> CRMContactList(string? start = null, List<ContactBitrix24>? aggregatedContacts = null);

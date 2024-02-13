@@ -1,6 +1,5 @@
 ﻿namespace Presentation.Controllers
 {
-    using Application.Features.Vendedor.Command.CrearVendedor;
     using Application.Features.Vendedor.Command.DarDeBajaVendedor;
     using Application.Features.Vendedor.Query.ObtenerGerentes;
     using MediatR;
@@ -20,14 +19,6 @@
             return Ok(response);
         }
 
-        [HttpPost]
-        [ProducesResponseType(typeof(string), (int)HttpStatusCode.OK)]
-        public async Task<ActionResult<string>> Crear([FromBody] CrearVendedorCommand command)
-        {
-
-            var response = await _mediator.Send(command);
-            return Ok(response);
-        }
 
         [HttpGet("Gerente")]
         [ProducesResponseType(typeof(string), (int)HttpStatusCode.OK)]

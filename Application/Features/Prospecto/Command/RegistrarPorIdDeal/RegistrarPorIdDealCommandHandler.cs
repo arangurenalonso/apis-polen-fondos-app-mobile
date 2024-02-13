@@ -6,8 +6,6 @@
     using MediatR;
     using Application.Contracts.ApiExterna;
     using Application.Contracts.Repositories;
-    using Application.Models.ConsumoApi.Bitrix24.Entities;
-    using Application.Models.ConsumoApi.Bitrix24.Models;
     using System.Text.Json;
     using Application.Exception;
     using Domain.Enum.Dictionario;
@@ -87,7 +85,8 @@
                         null,
                         null,
                         nombreDirector,
-                        nombreGerenteZona
+                        nombreGerenteZona,
+                        prospectoToCreate.ProCom??""
                         );
                     await _bitrix24ApiService.ActualizarContactoBitrix24(contact, vendedorAsignado.BitrixID);
 
