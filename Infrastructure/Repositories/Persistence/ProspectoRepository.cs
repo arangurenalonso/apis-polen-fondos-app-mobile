@@ -203,7 +203,7 @@
                                             .Where(x=>x.MaeId== idMaestroProspecto)
                                            .OrderByDescending(p => p.ProFecpro)
                                            .FirstOrDefaultAsync();
-            if (prospecto==null)
+            if (prospecto==null) 
             {
                 return (true,null);
             }

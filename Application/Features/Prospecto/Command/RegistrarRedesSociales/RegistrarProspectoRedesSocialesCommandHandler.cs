@@ -75,6 +75,7 @@
                     };
                     await _unitOfWork.Repository<LogFondos>().AddAsync(log);
                 }
+                
                 var tipoNegociacion =
                     EnumDictionaryProvider.TipoNegociacionEnumDict[TipoNegociacionEnum.VENTA_DIGITAL_B2C];
 
