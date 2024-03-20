@@ -217,7 +217,10 @@
             return response.Result.Result;
         } 
         public async Task<DealBitrix24> ValidarExistenciaDealEnBitrix(int prospectoId)
-        { 
+        {
+            var timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById("America/Lima");
+            var fechaActual = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, timeZoneInfo);
+            var fechaString = fechaActual.ToString();
             var prospecto=await _prospectoRepository.ObtenerProspectoPorId(prospectoId);
 
             var origenBitrixObtenido = await ObtenerOrigenBitrix(prospecto);
@@ -247,6 +250,8 @@
                                          dealBitrixExiste,
                                          tipoNegociacion,
                                          vendedorAsignado.BitrixID,
+                                         prospecto.ProFecasi.ToString(),
+                                         prospecto.ProFecest.ToString(),
                                          prospecto.MotdesId,
                                          prospecto.EstId,
                                          prospecto.EstContactoId,
@@ -281,6 +286,8 @@
                                                                 maestroProspecto.BitrixID,
                                                                 origenBitrixObtenido == null? contactoBitrixExiste.SOURCE_ID: origenBitrixObtenido,
                                                                 vendedorAsignado.BitrixID,
+                                                                fechaString,
+                                                                fechaString,
                                                                 prospecto.MotdesId,
                                                                 prospecto.EstId,
                                                                 prospecto.EstContactoId,
@@ -315,6 +322,8 @@
                                                                     maestroProspecto.BitrixID,
                                                                     origenBitrixObtenido == null ? contactoBitrixExiste.SOURCE_ID : origenBitrixObtenido,
                                                                     vendedorAsignado.BitrixID,
+                                                                    fechaString,
+                                                                    fechaString,
                                                                     prospecto.MotdesId,
                                                                     prospecto.EstId,
                                                                     prospecto.EstContactoId,
@@ -344,6 +353,8 @@
                                                                  dealBitrixToUpdate,
                                                                  tipoNegociacion,
                                                                  vendedorAsignado.BitrixID,
+                                                                 prospecto.ProFecasi.ToString(),
+                                                                 prospecto.ProFecest.ToString(),
                                                                  prospecto.MotdesId,
                                                                  prospecto.EstId,
                                                                  prospecto.EstContactoId,
@@ -390,6 +401,8 @@
                                                             idContactBitrix24,
                                                             origenBitrixObtenido,
                                                             vendedorAsignado.BitrixID,
+                                                                fechaString,
+                                                                fechaString,
                                                             prospecto.MotdesId,
                                                             prospecto.EstId,
                                                             prospecto.EstContactoId,
@@ -511,6 +524,8 @@
            DealBitrix24 dealBitrix24,
            string tipoNegociacion,
            string idUsuarioBitrix,
+            string? fechaGestion = null,
+            string? fechaAsignacion = null,
            int? motDesId = null,
            int? estId = null,
            int? estContactoId = null,
@@ -526,6 +541,14 @@
             if (!string.IsNullOrWhiteSpace(origenBitrix))
             {
                 dealBitrix24.SOURCE_ID = origenBitrix;
+            }
+            if (!string.IsNullOrWhiteSpace(fechaGestion))
+            {
+                dealBitrix24.UF_CRM_1710543414 = fechaGestion;
+            }
+            if (!string.IsNullOrWhiteSpace(fechaAsignacion))
+            {
+                dealBitrix24.UF_CRM_1710543372 = fechaAsignacion;
             }
             if (motDesId != null || estId != null || estContactoId != null)
             {
@@ -748,6 +771,8 @@
             string idContactBitrix24,
             string enumCampignOrigin,
             string idUsuarioBitrix,
+            string? fechaGestion = null,
+            string? fechaAsignacion = null,
             int? motDesId=null,
             int? estId=null,
             int? estContactoId=null,
@@ -765,7 +790,9 @@
                 ASSIGNED_BY_ID=idUsuarioBitrix,
                 UF_CRM_1695762237 = "",
                 UF_CRM_1695762254 = "",
-                UF_CRM_1707780281 = Comentario
+                UF_CRM_1707780281 = Comentario,
+                UF_CRM_1710543414 = fechaGestion ?? "",
+                UF_CRM_1710543372 = fechaAsignacion ?? "",
             };
 
             obj.TYPE_ID = tipoNegociacion;

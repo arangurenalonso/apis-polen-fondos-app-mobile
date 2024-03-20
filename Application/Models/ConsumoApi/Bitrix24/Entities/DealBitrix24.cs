@@ -16,7 +16,9 @@
         public string UF_CRM_1697215223 { get; set; } = "";//Director
         public string? UF_CRM_1707780281 { get; set; } = "";//Comentario
 
-        
+        public string UF_CRM_1710543414 { get; set; } = "";//fecha gestión
+        public string UF_CRM_1710543372 { get; set; } = "";//fecha asignacion
 
-    }
+
+    } 
 }

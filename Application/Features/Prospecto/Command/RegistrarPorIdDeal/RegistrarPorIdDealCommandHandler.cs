@@ -69,17 +69,25 @@
                 var idProspecto = 0;
                 if (ingresarProspecto)
                 {
+                    var timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById("America/Lima");
+                    var fechaActual = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, timeZoneInfo);
+                    var fechaString = fechaActual.ToString();
                     var vendedorAsignado = await _vendedorRepository.ObtenerVendedorAsignado(zonaId);
 
                     var (nombreDirector, nombreGerenteZona) = await _vendedorRepository.ObtenerJerarQuiaComercial(vendedorAsignado);
 
                     var prospectoToCreate = _mapper.Map<Prospectos>(deal);
                     prospectoToCreate.MedId = 10;
-                    idProspecto = await _prospectoRepository.EstablecerDatosMinimosYRegistrarProspecto(prospectoToCreate, idMaestroProspecto, deal.ID.ToString(), vendedorAsignado, vendedorAsignado.ZonId, origenVenta.Corivta, deal.SOURCE_ID);
+                    idProspecto = await _prospectoRepository.EstablecerDatosMinimosYRegistrarProspecto(prospectoToCreate, idMaestroProspecto, deal.ID.ToString(), vendedorAsignado, vendedorAsignado.ZonId, origenVenta.Corivta, deal.SOURCE_ID
+                        , fechaActual, fechaActual
+                        );
                     await _bitrix24ApiService.ActualizarDealBitrix24(
                         deal,
                         tipoNegociacion,
                         vendedorAsignado.BitrixID,
+
+                        fechaString,
+                        fechaString,
                         null,
                         null,
                         null,

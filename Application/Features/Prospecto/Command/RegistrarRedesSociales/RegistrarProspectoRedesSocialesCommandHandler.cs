@@ -119,6 +119,9 @@
 
                 if (seDebeIngresarProspecto)
                 {
+                    var timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById("America/Lima");
+                    var fechaActual = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, timeZoneInfo);
+                    var fechaString = fechaActual.ToString();
                     var idDealBitrix24 = "";
                     if (request.VaBitrix)
                     {
@@ -128,6 +131,8 @@
                                                            idContactBitrix24,
                                                            enumCampignOrigin.ToString(),
                                                            vendedorAsignado.BitrixID,
+                                                          fechaString,
+                                                           fechaString,
                                                            null,
                                                            null,
                                                            null,
@@ -138,7 +143,10 @@
                                                        );
                     }
                        
-                    idProspecto = await _prospectoRepository.EstablecerDatosMinimosYRegistrarProspecto(_mapper.Map<Prospectos>(request), idMaestroProspecto, idDealBitrix24, vendedorAsignado, vendedorAsignado.ZonId, "OV12", enumCampignOrigin.ToString());
+                    idProspecto = await _prospectoRepository.EstablecerDatosMinimosYRegistrarProspecto(_mapper.Map<Prospectos>(request), 
+                        idMaestroProspecto, idDealBitrix24, vendedorAsignado, vendedorAsignado.ZonId, "OV12", enumCampignOrigin.ToString()
+                        , fechaActual, fechaActual
+                        );
                 }
                 else
                 {

@@ -212,8 +212,11 @@
             int diasDiferencia = (fechaActual - fechaProspecto).Days;
             return (diasDiferencia >= 30, prospecto);
         }
-        public async Task<int> EstablecerDatosMinimosYRegistrarProspecto(Prospectos prospecto, 
-            int idMaestroProspecto, string idDealBitrix24, Vendedores vendedor, int zonaId,string idOrigen, string? enumCampignOrigin)
+        public async Task<int> EstablecerDatosMinimosYRegistrarProspecto(Prospectos prospecto,  
+            int idMaestroProspecto, string idDealBitrix24, Vendedores vendedor, int zonaId,string idOrigen, string? enumCampignOrigin
+            , DateTime fechaGestion,
+            DateTime fechaAsignacion
+            )
         {
             var fechaActual=DateTime.Now; 
             prospecto.BitrixID = idDealBitrix24;
@@ -234,6 +237,8 @@
             prospecto.VenGescod = vendedor.VenGesCod;
             prospecto.VenGercod = vendedor.VenGerCod;
             prospecto.ProCart = enumCampignOrigin;
+            prospecto.ProFecasi = fechaAsignacion;
+            prospecto.ProFecest = fechaGestion;
             if (idOrigen== "OV02") 
             {
                 prospecto.IntId = true;
